@@ -1,0 +1,47 @@
+# git ignore file
+
+####################################################################
+# Folder
+
+# VisualStudio
+.vs/
+Debug/
+DebugUSB/
+Debug_static/
+Release/
+ReleaseUSB/
+Release_static/
+ipch/
+
+
+#Codeblocks
+bin/
+obj/
+
+
+# Folder
+####################################################################
+
+####################################################################
+# File
+
+# VisualStudio
+*.opensdf
+*.suo
+*.sdf
+*.user
+*.aps
+*.layout
+
+
+#Codeblocks
+*.layout
+*.depend
+
+#common
+Thumbs.db
+.DS_Store
+
+# File
+####################################################################
+/.project
