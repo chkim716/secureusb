@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:common="http://defcon4.saferzone.com/common"
+			   width="800" height="300"
+			   creationComplete="creationCompleteHandler(event)"
+			   initialize="initializeHandler(event)"
+			   implements="mx.rpc.IResponder"
+			   title="{DmosFramework.getInstance().SNL('SC_SEARCH_USB')}" xmlns:comp="com.saferzone.defcon4.susbma.usbmanage.view.comp.*">
+	
+	<fx:Metadata>
+		[Event(name="useMultipleSelectionChange", type="flash.events.Event")]
+		[Event(name="confirm", type="com.saferzone.defcon4.susbma.usbmanage.event.SnoSearchPopupEvent")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.Icons;
+			import com.saferzone.defcon4.services.SusbmaUsbManageRemote;
+			import com.saferzone.defcon4.services.vo.CommonUiSearchVO;
+			import com.saferzone.defcon4.services.vo.CommonUiUsbMasterVO;
+			import com.saferzone.defcon4.susbma.usbmanage.event.SnoSearchPopupEvent;
+			
+			import mx.collections.IList;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.FlexMouseEvent;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.ObjectUtil;
+			
+			import spark.components.gridClasses.GridSelectionMode;
+			
+			
+			//------------------------------------------------------------------------------
+			//
+			// Properties #public 
+			//
+			//------------------------------------------------------------------------------
+			
+			//--------------------------------------
+			// useMultipleSelection 
+			//--------------------------------------
+			
+			private var _useMultipleSelection:Boolean = false;
+			
+			/** 카운트 */
+			[Bindable]
+			public var searchResultCount:int;
+			
+			[Bindable(event = "useMultipleSelectionChange")]
+			public function get useMultipleSelection():Boolean
+			{
+				return _useMultipleSelection;
+			}
+			
+			public function set useMultipleSelection(value:Boolean):void
+			{
+				if(_useMultipleSelection !== value)
+				{
+					_useMultipleSelection = value;
+					confirmButton.enabled = false;
+					dispatchEvent(new Event("useMultipleSelectionChange"));
+				}
+			}
+			
+			//------------------------------------------------------------------------------
+			//
+			// Properties #private 
+			//
+			//------------------------------------------------------------------------------
+			
+			private var service:SusbmaUsbManageRemote;
+			
+			private var vo:CommonUiSearchVO;
+			
+			//------------------------------------------------------------------------------
+			//
+			// Methods 
+			//
+			//------------------------------------------------------------------------------
+			
+			//--------------------------------------
+			// Event Handlers 
+			//--------------------------------------
+			
+			protected function confirmButton_clickHandler(event:MouseEvent):void
+			{
+				// 선택모드에 따라 다른 형태로 리턴되어야 할 때.
+				//				if(useMultipleSelection)
+				//				{
+				//					var selectedItems:IList = new ArrayCollection();
+				//					for each(var item:Object in empGrid.selectedItems)
+				//					{
+				//						selectedItems.addItem(item);
+				//					}
+				//					trace(selectedItems);
+				//				}
+				//				else
+				//				{
+				//					trace(empGrid.selectedItem);
+				//				}
+				
+				// 선택모드에 상관없이 같은 형태로 리턴되어야 할 때.
+				var selectedItems:IList = new ArrayCollection();
+				for each(var item:Object in usbGrid.selectedItems)
+				{
+					selectedItems.addItem(CommonUiUsbMasterVO(item));
+				}
+				
+				var e:SnoSearchPopupEvent = new SnoSearchPopupEvent(SnoSearchPopupEvent.CONFIRM);
+				e.selectedItem = usbGrid.selectedItem as CommonUiUsbMasterVO;
+				e.selectedItems = selectedItems;
+				dispatchEvent(e);
+				
+				dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				vo = new CommonUiSearchVO();
+				vo.mediaId = -1;
+				vo.stateId = -1;
+				selectUsbList(vo);
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				service = new SusbmaUsbManageRemote();
+			}
+			
+			protected function refreshButton_clickHandler(event:MouseEvent):void
+			{
+				selectUsbList(vo);
+			}
+			
+			protected function searchButton_clickHandler(event:MouseEvent):void
+			{
+				searchFormPop.displayPopUp = true;
+				if(usbSearchForm)
+					usbSearchForm.commonUiSearchVO = ObjectUtil.copy(vo) as CommonUiSearchVO;
+			}
+			
+			protected function usbSearchForm_closeHandler(event:CloseEvent):void
+			{
+				if(event.detail == UsbSearchForm.SEARCH)
+				{
+					vo = ObjectUtil.copy(usbSearchForm.commonUiSearchVO) as CommonUiSearchVO;
+					selectUsbList(vo);
+				}
+				searchFormPop.displayPopUp = false;
+			}
+			
+			protected function usbSearchForm_mouseDownOutsideHandler(event:FlexMouseEvent):void
+			{
+				searchFormPop.displayPopUp = false;
+			}
+			
+			
+			//--------------------------------------
+			// public 
+			//--------------------------------------
+			
+			/**
+			 * mx.rpc.IResponder
+			 */
+			public function result(data:Object):void
+			{
+				var e:ResultEvent = data as ResultEvent;
+				var dataProvider:IList = e.result as IList;
+				usbGrid.dataProvider = dataProvider;
+				searchResultCount = usbGrid.dataProviderLength;
+				confirmButton.enabled = false;
+			}
+			
+			/**
+			 * mx.rpc.IResponder
+			 */
+			public function fault(info:Object):void
+			{
+				var faultEvent:FaultEvent = info as FaultEvent;
+				if(faultEvent)
+				{
+					var rootCause:Object = faultEvent.fault.rootCause;
+					var text:String = rootCause ? rootCause.message : faultEvent.message.toString();
+					Alert.show(text, DmosFramework.getInstance().SNL("SC_ALERT_ERROR"));
+				}
+			}
+			
+			//--------------------------------------
+			// private 
+			//--------------------------------------
+			
+			private function selectUsbList(vo:CommonUiSearchVO):void
+			{
+				var token:AsyncToken = service.selectUsbList(vo);
+				token.addResponder(this);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<common:ToolBar id="toolBar"
+					left="0" right="0" top="0">
+		
+		<s:Button id="searchButton"
+				  icon="{Icons.ICON_SEARCH_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_SEARCH')}"
+				  click="searchButton_clickHandler(event)"/>
+		
+		<s:Button id="confirmButton"
+				  icon="{Icons.ICON_SAVE_16}"
+				  enabled="{usbGrid.selectionLength > 0}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_APPLY')}"
+				  click="confirmButton_clickHandler(event)"/>
+		
+		<s:Button id="refreshButton"
+				  icon="{Icons.ICON_REFRESH_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_REFRESH')}"
+				  click="refreshButton_clickHandler(event)"/>
+		
+		
+		<s:Spacer width="100%"/>
+		
+		<s:Label id="countLabel"
+				 height="100%"
+				 verticalAlign="middle"
+				 text="{DmosFramework.getInstance().SNL('SC_SEARCH_RESULT') + searchResultCount}"/>
+		
+	</common:ToolBar>
+	
+	<s:DataGrid id="usbGrid"
+				left="0" right="0" top="{toolBar.height + 5}" bottom="0"
+				selectionMode="{useMultipleSelection ? GridSelectionMode.MULTIPLE_ROWS : GridSelectionMode.SINGLE_ROW}">
+		
+		<s:columns>
+			
+			<s:ArrayCollection id="usbGridColumns">
+				
+				<s:GridColumn dataField="sno" width="200"
+							  headerText="{DmosFramework.getInstance().SNL('SC_SERIAL_NO')}"/>
+				
+				<s:GridColumn dataField="stockDate" width="180"
+							  headerText="{DmosFramework.getInstance().SNL('SUSBMA_INVENTORY_STOCK_DATE')}"/>
+				
+				<s:GridColumn dataField="fullOrgName"
+							  headerText="{DmosFramework.getInstance().SNL('SC_MANAGE_DEPT')}"/>
+				
+				<s:GridColumn dataField="creator" width="100"
+							  headerText="{DmosFramework.getInstance().SNL('SC_CREATOR')}"/>
+				
+				<s:GridColumn dataField="inventoryReason"
+							  headerText="{DmosFramework.getInstance().SNL('SC_WAREHOUSING_REAS_D4')}"/>
+				
+			</s:ArrayCollection>
+			
+		</s:columns>
+		
+	</s:DataGrid>
+	
+	<s:PopUpAnchor id="searchFormPop"
+				   x="{searchButton.x}" y="{toolBar.height + 1}">
+		
+		<comp:UsbSearchForm id="usbSearchForm"
+							mouseDownOutside="usbSearchForm_mouseDownOutsideHandler(event)"
+							close="usbSearchForm_closeHandler(event)"/>
+		
+	</s:PopUpAnchor>
+	
+</s:TitleWindow>

@@ -1,0 +1,1287 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!---
+
+USB 검색
+
+@version 0.001
+@author CyD
+@since Nov 3, 2011
+
+@langversion 3.0
+@playerversion Flash 10
+@playerversion AIR 2.6
+@productversion Flex 4.5
+
+-->
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:common="http://defcon4.saferzone.com/common"
+			   initialize="initializeHandler(event)"
+			   creationComplete="onCreateCompleteHandler()"
+			   controlBarVisible="true"
+			   title="{DmosFramework.getInstance().SNL('SC_SEARCH')}">
+
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.consts.CustomerId;
+			import com.saferzone.defcon4.common.consts.GlobalConst;
+			import com.saferzone.defcon4.common.events.DeptSearchPopupEvent;
+			import com.saferzone.defcon4.common.utils.SZUtil;
+			import com.saferzone.defcon4.services.SusbmaCommonRemote;
+			import com.saferzone.defcon4.services.vo.SYSBaseOrgVO;
+			import com.saferzone.defcon4.services.vo.SearchSusbMasterVO;
+			import com.saferzone.defcon4.services.vo.SusbmaMediaVO;
+			import com.saferzone.defcon4.services.vo.SusbmaStateVO;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.IList;
+			import mx.controls.Alert;
+			import mx.events.CalendarLayoutChangeEvent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			import mx.validators.Validator;
+			
+			private function onCreateCompleteHandler():void
+			{
+				this.serialNoInput.setFocus();
+					
+				var isRetireShowBool:Boolean = DmosFramework.getInstance().CONFIG("USB_RETIRE_SNO")=="1"?true:false;
+				retireForm.visible = isRetireShowBool;
+				retireForm.includeInLayout = isRetireShowBool;
+				
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.CC_V5 ){
+					_useMediaTypeForm = false;
+				}
+				
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.GS){
+					isoVersionForm.visible = isoVersionForm.includeInLayout = false;
+					stateForm.visible = stateForm.includeInLayout = false;
+				}
+			}
+			
+			//------------------------------------------------------------------------------
+			//
+			// Constants 
+			//
+			//------------------------------------------------------------------------------
+			
+			private static const DATE_FORMAT:String = "YYYYMMDD";
+			
+			
+			private var _popupMode:int = 0;
+			
+			public function get popupMode():int
+			{
+				return _popupMode;
+			}
+			
+			public function set popupMode(mode:int):void
+			{
+				_popupMode = mode;
+			}
+			
+			private var _searchSubsMasterVo:SearchSusbMasterVO = null;
+		
+			public function get searchSubsMasterVo():SearchSusbMasterVO
+			{
+				return _searchSubsMasterVo;
+			}
+			
+			public function set searchSubsMasterVo(value:SearchSusbMasterVO):void
+			{
+				_searchSubsMasterVo = value;
+			}
+			
+			private var _searchToClassList:String = null;
+			
+			public function get searchToClassList():String
+			{
+				return _searchToClassList;
+			}
+			
+			public function set searchToClassList(value:String):void
+			{
+				_searchToClassList = value;
+			}
+			
+			//------------------------------------------------------------------------------
+			//
+			// Properties #public 
+			//
+			//------------------------------------------------------------------------------
+			
+			//--------------------------------------
+			// useLatestConnectDateForm 
+			//--------------------------------------
+			
+			private var _useLatestConnectDateForm:Boolean = true;
+			
+			[Bindable(event = "useLatestConnectDateFormChange")]
+			public function get useLatestConnectDateForm():Boolean
+			{
+				return _useLatestConnectDateForm;
+			}
+			
+			public function set useLatestConnectDateForm(value:Boolean):void
+			{
+				if(_useLatestConnectDateForm !== value)
+				{
+					_useLatestConnectDateForm = value;
+					dispatchEvent(new Event("useLatestConnectDateFormChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// useRegDateForm 
+			//--------------------------------------
+			
+			private var _useRegDateForm:Boolean = true;
+			
+			[Bindable(event = "useRegDateFormChange")]
+			public function get useRegDateForm():Boolean
+			{
+				return _useRegDateForm;
+			}
+			
+			public function set useRegDateForm(value:Boolean):void
+			{
+				if(_useRegDateForm !== value)
+				{
+					_useRegDateForm = value;
+					dispatchEvent(new Event("useRegDateFormChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// useSerialNoForm 
+			//--------------------------------------
+			
+			private var _useSerialNoForm:Boolean = true;
+			
+			[Bindable(event = "useSerialNoFormChange")]
+			public function get useSerialNoForm():Boolean
+			{
+				return _useSerialNoForm;
+			}
+			
+			public function set useSerialNoForm(value:Boolean):void
+			{
+				if(_useSerialNoForm !== value)
+				{
+					_useSerialNoForm = value;
+					dispatchEvent(new Event("useSerialNoFormChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// useManagementIdForm 
+			//--------------------------------------
+			
+			private var _useManagementIdForm:Boolean = true;
+			
+			[Bindable(event = "useManagementIdFormChange")]
+			public function get useManagementIdForm():Boolean
+			{
+				return _useManagementIdForm;
+			}
+			
+			public function set useManagementIdForm(value:Boolean):void
+			{
+				if(_useManagementIdForm !== value)
+				{
+					_useManagementIdForm = value;
+					dispatchEvent(new Event("useManagementIdFormChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// useClassForm 
+			//--------------------------------------
+			
+			private var _useClassForm:Boolean = true;
+			
+			[Bindable(event = "useClassFormChange")]
+			public function get useClassForm():Boolean
+			{
+				return _useClassForm;
+			}
+			
+			public function set useClassForm(value:Boolean):void
+			{
+				if(_useClassForm !== value)
+				{
+					_useClassForm = value;
+					dispatchEvent(new Event("useClassFormChange"));
+				}
+			}
+			
+			
+			//--------------------------------------
+			// 퇴사자 
+			//--------------------------------------
+			private var _useRetireForm:Boolean = true;
+			
+			[Bindable(event = "useRetireFormChange")]
+			public function get useRetireForm():Boolean
+			{
+				return _useRetireForm;
+			}
+			
+			public function set useRetireForm(value:Boolean):void
+			{
+				if(_useRetireForm !== value)
+				{
+					_useRetireForm = value;
+					dispatchEvent(new Event("useRetireFormChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// useEmpNameForm 
+			//--------------------------------------
+			
+			private var _useEmpNameForm:Boolean = true;
+			
+			[Bindable(event = "useEmpNameFormChange")]
+			public function get useEmpNameForm():Boolean
+			{
+				return _useEmpNameForm;
+			}
+			
+			public function set useEmpNameForm(value:Boolean):void
+			{
+				if(_useEmpNameForm !== value)
+				{
+					_useEmpNameForm = value;
+					dispatchEvent(new Event("useEmpNameFormChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// useDeptForm 
+			//--------------------------------------
+			
+			private var _useDeptForm:Boolean = true;
+			
+			[Bindable(event = "useDeptFormChange")]
+			public function get useDeptForm():Boolean
+			{
+				return _useDeptForm;
+			}
+			
+			public function set useDeptForm(value:Boolean):void
+			{
+				if(_useDeptForm !== value)
+				{
+					_useDeptForm = value;
+					dispatchEvent(new Event("useDeptFormChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// useManagerForm 
+			//--------------------------------------
+			
+			private var _useManagerForm:Boolean = true;
+			
+			[Bindable(event = "useManagerFormChange")]
+			public function get useManagerForm():Boolean
+			{
+				return _useManagerForm;
+			}
+			
+			public function set useManagerForm(value:Boolean):void
+			{
+				if(_useManagerForm !== value)
+				{
+					_useManagerForm = value;
+					dispatchEvent(new Event("useManagerFormChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// useMediaTypeForm 
+			//--------------------------------------
+			
+			private var _useMediaTypeForm:Boolean = true;
+			
+			[Bindable(event = "useMediaTypeFormChange")]
+			public function get useMediaTypeForm():Boolean
+			{
+				return _useMediaTypeForm;
+			}
+			
+			public function set useMediaTypeForm(value:Boolean):void
+			{
+				if(_useMediaTypeForm !== value)
+				{
+					_useMediaTypeForm = value;
+					dispatchEvent(new Event("useMediaTypeFormChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// useStateForm 
+			//--------------------------------------
+			
+			private var _useStateForm:Boolean = true;
+			
+			[Bindable(event = "useStateFormChange")]
+			public function get useStateForm():Boolean
+			{
+				return _useStateForm;
+			}
+			
+			public function set useStateForm(value:Boolean):void
+			{
+				if(_useStateForm !== value)
+				{
+					_useStateForm = value;
+					dispatchEvent(new Event("useStateFormChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// useIncludeSubDeptOption 
+			//--------------------------------------
+			
+			private var _useIncludeSubDeptOption:Boolean = false;
+			
+			[Bindable(event = "useIncludeSubDeptOptionChange")]
+			public function get useIncludeSubDeptOption():Boolean
+			{
+				return _useIncludeSubDeptOption;
+			}
+			
+			public function set useIncludeSubDeptOption(value:Boolean):void
+			{
+				if(_useIncludeSubDeptOption !== value)
+				{
+					_useIncludeSubDeptOption = value;
+					dispatchEvent(new Event("useIncludeSubDeptOptionChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// latestConnectDateLabel 
+			//--------------------------------------
+			
+			private var _latestConnectDateLabel:String = DmosFramework.getInstance().SNL("SC_LATEST_CONNECT_DATE");
+			
+			[Bindable(event = "latestConnectDateLabelChange")]
+			public function get latestConnectDateLabel():String
+			{
+				return _latestConnectDateLabel;
+			}
+			
+			public function set latestConnectDateLabel(value:String):void
+			{
+				if(_latestConnectDateLabel !== value)
+				{
+					_latestConnectDateLabel = value;
+					dispatchEvent(new Event("latestConnectDateLabelChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// regDateLabel 
+			//--------------------------------------
+			
+			private var _regDateLabel:String = DmosFramework.getInstance().SNL("SC_REGDATE_SERVER");
+			
+			[Bindable(event = "regDateLabelChange")]
+			public function get regDateLabel():String
+			{
+				return _regDateLabel;
+			}
+			
+			public function set regDateLabel(value:String):void
+			{
+				if(_regDateLabel !== value)
+				{
+					_regDateLabel = value;
+					dispatchEvent(new Event("regDateLabelChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// serialNoLabel 
+			//--------------------------------------
+			
+			private var _serialNoLabel:String = DmosFramework.getInstance().SNL("SC_SERIAL_NO");
+			
+			[Bindable(event = "serialNoLabelChange")]
+			public function get serialNoLabel():String
+			{
+				return _serialNoLabel;
+			}
+			
+			public function set serialNoLabel(value:String):void
+			{
+				if(_serialNoLabel !== value)
+				{
+					_serialNoLabel = value;
+					dispatchEvent(new Event("serialNoLabelChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// managementIdLabel 
+			//--------------------------------------
+			
+			private var _managementIdLabel:String = DmosFramework.getInstance().SNL("SC_MANAGE_NO");
+			
+			[Bindable(event = "managementIdLabelChange")]
+			public function get managementIdLabel():String
+			{
+				return _managementIdLabel;
+			}
+			
+			public function set managementIdLabel(value:String):void
+			{
+				if(_managementIdLabel !== value)
+				{
+					_managementIdLabel = value;
+					dispatchEvent(new Event("managementIdLabelChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// classLabel 
+			//--------------------------------------
+			
+			private var _classLabel:String = DmosFramework.getInstance().SNL("SC_CLASS");
+			
+			[Bindable(event = "classLabelChange")]
+			public function get classLabel():String
+			{
+				return _classLabel;
+			}
+			
+			public function set classLabel(value:String):void
+			{
+				if(_classLabel !== value)
+				{
+					_classLabel = value;
+					dispatchEvent(new Event("classLabelChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// 퇴사자label
+			//--------------------------------------
+			
+			private var _retireLabel:String = DmosFramework.getInstance().SNL("SC_RETIRE_EMPLOYEE");
+			
+			[Bindable(event = "retireLabelChange")]
+			public function get retireLabel():String
+			{
+				return _retireLabel;
+			}
+			
+			public function set retireLabel(value:String):void
+			{
+				if(_retireLabel !== value)
+				{
+					_retireLabel = value;
+					dispatchEvent(new Event("retireLabelChange"));
+				}
+			}
+			
+			
+			//--------------------------------------
+			// empNameLabel 
+			//--------------------------------------
+			
+			private var _empNameLabel:String = DmosFramework.getInstance().SNL("SC_EMP_NAME");
+			
+			[Bindable(event = "empNameLabelChange")]
+			public function get empNameLabel():String
+			{
+				return _empNameLabel;
+			}
+			
+			public function set empNameLabel(value:String):void
+			{
+				if(_empNameLabel !== value)
+				{
+					_empNameLabel = value;
+					dispatchEvent(new Event("empNameLabelChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// deptLabel 
+			//--------------------------------------
+			
+			private var _deptLabel:String = DmosFramework.getInstance().SNL("SC_DEPT");
+			
+			[Bindable(event = "deptLabelChange")]
+			public function get deptLabel():String
+			{
+				return _deptLabel;
+			}
+			
+			public function set deptLabel(value:String):void
+			{
+				if(_deptLabel !== value)
+				{
+					_deptLabel = value;
+					dispatchEvent(new Event("deptLabelChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// managerLabel 
+			//--------------------------------------
+			
+			private var _managerLabel:String = DmosFramework.getInstance().SNL("SC_MANAGER");
+			
+			[Bindable(event = "managerLabelChange")]
+			public function get managerLabel():String
+			{
+				return _managerLabel;
+			}
+			
+			public function set managerLabel(value:String):void
+			{
+				if(_managerLabel !== value)
+				{
+					_managerLabel = value;
+					dispatchEvent(new Event("managerLabelChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// mediaTypeLabel 
+			//--------------------------------------
+			
+			private var _mediaTypeLabel:String = DmosFramework.getInstance().SNL("SC_MEDIATYPE");
+			
+			[Bindable(event = "mediaTypeLabelChange")]
+			public function get mediaTypeLabel():String
+			{
+				return _mediaTypeLabel;
+			}
+			
+			public function set mediaTypeLabel(value:String):void
+			{
+				if(_mediaTypeLabel !== value)
+				{
+					_mediaTypeLabel = value;
+					dispatchEvent(new Event("mediaTypeLabelChange"));
+				}
+			}
+			
+			//--------------------------------------
+			// stateLabel 
+			//--------------------------------------
+			
+			private var _stateLabel:String = DmosFramework.getInstance().SNL("SC_STATE");
+			
+			[Bindable(event = "stateLabelChange")]
+			public function get stateLabel():String
+			{
+				return _stateLabel;
+			}
+			
+			public function set stateLabel(value:String):void
+			{
+				if(_stateLabel !== value)
+				{
+					_stateLabel = value;
+					dispatchEvent(new Event("stateLabelChange"));
+				}
+			}
+			
+			[Bindable]
+			private var requestStateProvider:ArrayCollection =
+				new ArrayCollection([
+					{label:DmosFramework.getInstance().SNL('SC_ALL'), value:-1},
+					{label:DmosFramework.getInstance().SNL('SC_REGISTER_NOT_USE'), value:0},
+					{label:DmosFramework.getInstance().SNL('SC_TAKE_OUT'), value:1},
+					{label:DmosFramework.getInstance().SNL('SC_IN_USE'), value:2},
+					{label:DmosFramework.getInstance().SNL('SC_USE_EXPIRED'), value:3}
+				]);
+			
+			//--------------------------------------
+			// startLatestConnectDateToString 
+			//--------------------------------------
+			
+			public function get startLatestConnectDateToString():String
+			{
+				return dateFormatter.format(startConnectDate.selectedDate);
+			}
+			
+			//--------------------------------------
+			// endLatestConnectDateToString 
+			//--------------------------------------
+			
+			public function get endLatestConnectDateToString():String
+			{
+				return dateFormatter.format(endConnectDate.selectedDate);
+			}
+			
+			//--------------------------------------
+			// startRegDateToString 
+			//--------------------------------------
+			
+			public function get startRegDateToString():String
+			{
+				return dateFormatter.format(startRegDate.selectedDate);
+			}
+			
+			//--------------------------------------
+			// endRegDateToString 
+			//--------------------------------------
+			
+			public function get endRegDateToString():String
+			{
+				return dateFormatter.format(endRegDate.selectedDate);
+			}
+			
+			//--------------------------------------
+			// serialNo 
+			//--------------------------------------
+			
+			public function get serialNo():String
+			{
+				return setNullIfEmptyString(serialNoInput.text);
+			}
+			
+			//--------------------------------------
+			// managementId 
+			//--------------------------------------
+			
+			public function get managementId():String
+			{
+				return setNullIfEmptyString(managementIdInput.text);
+			}
+			
+			//--------------------------------------
+			// empName 
+			//--------------------------------------
+			
+			public function get empName():String
+			{
+				return setNullIfEmptyString(empNameInput.text);
+			}
+			
+			//--------------------------------------
+			// orgId 
+			//--------------------------------------
+			
+			public function get orgId():String
+			{
+				return setNullIfEmptyString(selectedOrgId);
+			}
+			
+			//20130408 김정욱 검색창에서 이전 검색  조건 중 부서 값 출력 안되는 현상 수정  #1647 - START
+			public function set orgId(value:String):void
+			{
+				selectedOrgId = setNullIfEmptyString(value);
+			}
+			//20130408 김정욱 검색창에서 이전 검색  조건 중 부서 값 출력 안되는 현상 수정  #1647 - END
+			
+			//--------------------------------------
+			// manager 
+			//--------------------------------------
+			
+			public function get manager():String
+			{
+				return setNullIfEmptyString(managerInput.text);
+			}
+			
+			//--------------------------------------
+			// mediaId 
+			//--------------------------------------
+			
+			public function get mediaId():int
+			{
+				return mediaTypeSelector.selectedItem.mediaId;
+			}
+			
+			//--------------------------------------
+			// stateId 
+			//--------------------------------------
+			
+			public function get stateId():int
+			{
+				return stateSelector.selectedItem.stateId;
+			}
+			
+			//--------------------------------------
+			// classListToString 
+			//--------------------------------------
+			
+			public function get classListToString():String
+			{
+				var selection:String = "";
+				var dataProvider:IList = classList.dataProvider;
+				var length:int = dataProvider.length;
+				var checkCount:int = 0;
+				for(var i:int = 0; i < length; i++)
+				{
+					//if(dataProvider.getItemAt(i).checked)
+					if(dataProvider.getItemAt(i).enable)
+					{
+						selection += dataProvider.getItemAt(i).classId + ",";
+						checkCount++;
+					}
+				}
+				
+				if(checkCount > 0)
+				{
+					selection = selection.substring(0, selection.lastIndexOf(","));
+				}
+				
+				return selection;
+			}
+			
+			//------------------------------------------------------------------------------
+			//
+			// Properties #private 
+			//
+			//------------------------------------------------------------------------------
+			
+			private var selectedOrgId:String;
+			
+			private var dateFormatter:DateFormatter;
+			
+			//------------------------------------------------------------------------------
+			//
+			// Methods 
+			//
+			//------------------------------------------------------------------------------
+			
+			//--------------------------------------
+			// Event Handlers 
+			//--------------------------------------
+			
+			protected function deptSearchPopup_confirmHandler(event:DeptSearchPopupEvent):void
+			{
+				var selectedDept:SYSBaseOrgVO = event.selectedDept as SYSBaseOrgVO;
+				deptInput.text = selectedDept.orgName;
+				selectedOrgId = selectedDept.orgId;
+			}
+			
+			protected function deptSearchPopup_closeHandler(event:CloseEvent):void
+			{
+				deptSearchAnchor.displayPopUp = false;
+			}
+			
+			protected function browseDeptButton_clickHandler(event:MouseEvent):void
+			{
+				var deptWindowPosition:Point = new Point(0, 0);
+				deptWindowPosition = localToGlobal(deptWindowPosition);
+				deptSearchAnchor.x = deptWindowPosition.x + width - 40;
+				deptSearchAnchor.y = deptWindowPosition.y - 93;
+				deptSearchAnchor.displayPopUp = true;
+			}
+			
+			protected function startConnectDate_changeHandler(event:CalendarLayoutChangeEvent):void
+			{
+				endConnectDate.selectableRange = {rangeStart:startConnectDate.selectedDate};
+			}
+			
+			protected function endConnectDate_changeHandler(event:CalendarLayoutChangeEvent):void
+			{
+				startConnectDate.selectableRange = {rangeEnd:endConnectDate.selectedDate};
+			}
+			
+			protected function startRegDate_changeHandler(event:CalendarLayoutChangeEvent):void
+			{
+				endRegDate.selectableRange = {rangeStart:startRegDate.selectedDate};
+			}
+			
+			protected function endRegDate_changeHandler(event:CalendarLayoutChangeEvent):void
+			{
+				startRegDate.selectableRange = {rangeEnd:endRegDate.selectedDate};
+			}
+			
+			protected function nullClassListAlert_closeHandler(event:CloseEvent):void
+			{
+				event.stopImmediatePropagation();
+			}
+			
+			protected function confirmButton_clickHandler(event:MouseEvent):void
+			{
+				var arInvalid:Array = Validator.validateAll(
+					[
+						serialNoInputValidator,
+						managementIdInputValidator,
+						empNameInputValidator,
+						managerInputValidator,
+						deptInputValidator
+					]
+				);
+				
+				
+				if(arInvalid.length>0)
+				{
+					event.stopImmediatePropagation();
+				}
+				
+//				if(classListToString == "")
+//				{
+//					Alert.show(DmosFramework.getInstance().SNL("SC_PROMPT_SEARCH_MIN_CLASS"),
+//						DmosFramework.getInstance().SNL("SC_SEARCH"), Alert.OK,
+//						this, nullClassListAlert_closeHandler);
+//					event.stopImmediatePropagation();
+//				}else{
+//					//시작일자가 종료일자보다 클 경우 return 처리 //////// START
+//					if(Number(SZUtil.replaceAll(startConnectDate.text,'-','')) > Number(SZUtil.replaceAll(endConnectDate.text,'-','')))
+//					{
+//						Alert.show(DmosFramework.getInstance().SNL("SC_PROMPT_INVALID_PERIOD"), 
+//							DmosFramework.getInstance().SNL("SC_SEARCH"), Alert.OK,
+//							this, nullClassListAlert_closeHandler);
+//						startConnectDate.selectedDate = SZUtil.dateAdd("YYYY", -5);
+//						event.stopImmediatePropagation();
+//					}else if(Number(SZUtil.replaceAll(startRegDate.text,'-','')) > Number(SZUtil.replaceAll(endRegDate.text,'-',''))){
+//						Alert.show(DmosFramework.getInstance().SNL("SC_PROMPT_INVALID_PERIOD"), 
+//							DmosFramework.getInstance().SNL("SC_SEARCH"), Alert.OK,
+//							this, nullClassListAlert_closeHandler);
+//						startRegDate.selectedDate = SZUtil.dateAdd("YYYY", -5);
+//						event.stopImmediatePropagation();
+//					}
+//					//시작일자가 종료일자보다 클 경우 return 처리 //////// END
+//				}
+				
+				//시작일자가 종료일자보다 클 경우 return 처리 //////// START
+				if(Number(SZUtil.replaceAll(startConnectDate.text,'-','')) > Number(SZUtil.replaceAll(endConnectDate.text,'-','')))
+				{
+					Alert.show(DmosFramework.getInstance().SNL("SC_PROMPT_INVALID_PERIOD"), 
+						DmosFramework.getInstance().SNL("SC_SEARCH"), Alert.OK,
+						this, nullClassListAlert_closeHandler);
+					startConnectDate.selectedDate = SZUtil.dateAdd("YYYY", -5);
+					event.stopImmediatePropagation();
+				}else if(Number(SZUtil.replaceAll(startRegDate.text,'-','')) > Number(SZUtil.replaceAll(endRegDate.text,'-',''))){
+					Alert.show(DmosFramework.getInstance().SNL("SC_PROMPT_INVALID_PERIOD"), 
+						DmosFramework.getInstance().SNL("SC_SEARCH"), Alert.OK,
+						this, nullClassListAlert_closeHandler);
+					startRegDate.selectedDate = SZUtil.dateAdd("YYYY", -5);
+					event.stopImmediatePropagation();
+				}
+				//시작일자가 종료일자보다 클 경우 return 처리 //////// END
+				
+				
+				
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				dateFormatter = new DateFormatter();
+				dateFormatter.formatString = DATE_FORMAT;	
+			}
+			
+			
+			//--------------------------------------
+			// public 
+			//--------------------------------------
+			
+		
+			//--------------------------------------
+			// private 
+			//--------------------------------------
+			
+			private function setNullIfEmptyString(value:String):String
+			{
+				var trimmed:String = StringUtil.trim(value);
+				return trimmed.length > 0 ? trimmed : null;
+			}
+			/*
+			protected function classListAllSelected_changeHandler(event:Event):void
+			{
+				var dataProvider:IList = classList.dataProvider;
+				var length:int = dataProvider.length;
+				
+				if(classListAllSelected.selected)
+				{
+					for(var a:int = 0; a < length; a++)
+					{	
+						dataProvider.getItemAt(a).enable = true;
+					}	
+				}
+				else
+				{
+					for(var a:int = 0; a < length; a++)
+					{	
+						dataProvider.getItemAt(a).enable = false;
+					}	
+				}
+				
+			}
+			*/
+			protected function classListAllSelected_clickHandler(event:MouseEvent):void
+			{
+				var dataProvider:IList = classList.dataProvider;
+				var length:int = dataProvider.length;
+				if(classListAllSelected.selected)
+				{
+					for(var a:int = 0; a < length; a++)
+					{	
+						dataProvider.getItemAt(a).enable = true;
+						dataProvider.itemUpdated(dataProvider.getItemAt(a), "enable", null, dataProvider.getItemAt(a).enable);
+					}	
+				}
+				else
+				{
+					for(var a:int = 0; a < length; a++)
+					{	
+						dataProvider.getItemAt(a).enable = false;
+						dataProvider.itemUpdated(dataProvider.getItemAt(a), "enable", null, dataProvider.getItemAt(a).enable);
+					}	
+				}
+				
+				
+			}
+			
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+	
+		<common:SZStringValidator id="serialNoInputValidator" 
+								  source="{serialNoInput}" 
+								  property="text" 
+								  field="{SZStringValidator.SNO}"
+								  />
+
+		<common:SZStringValidator id="managementIdInputValidator" 
+								  source="{managementIdInput}" 
+								  property="text" 
+								  field="{SZStringValidator.MANAGEMENTID}"
+								  />
+
+		<common:SZStringValidator id="empNameInputValidator" 
+								  source="{empNameInput}" 
+								  property="text" 
+								  field="{SZStringValidator.EMPNAME}"
+								  />
+		
+		<common:SZStringValidator id="managerInputValidator" 
+								  source="{managerInput}" 
+								  property="text" 
+								  field="{SZStringValidator.EMPNAME}"
+								  />
+		
+		<common:SZStringValidator id="deptInputValidator" 
+								  source="{deptInput}" 
+								  property="text" 
+								  field="{SZStringValidator.DEPTNAME}"
+								  />
+		
+	</fx:Declarations>
+	
+	<s:layout>
+
+		<s:VerticalLayout gap="10"/>
+
+	</s:layout>
+
+	<s:Form id="searchForm">
+		
+		<s:FormItem id="latestConnectDateForm"
+					width="100%"
+					includeInLayout="{useLatestConnectDateForm}"
+					label="{latestConnectDateLabel}"
+					visible="{useLatestConnectDateForm}">
+
+			<s:layout>
+
+				<s:HorizontalLayout gap="10"/>
+
+			</s:layout>
+
+			<mx:DateField id="startConnectDate"
+						  yearNavigationEnabled="true"
+						  change="startConnectDate_changeHandler(event)"
+						  formatString="YYYY-MM-DD"/>
+
+			<mx:DateField id="endConnectDate"
+						  yearNavigationEnabled="true"
+						  change="endConnectDate_changeHandler(event)"
+						  formatString="YYYY-MM-DD"/>
+
+		</s:FormItem>
+
+		<s:FormItem id="regDateForm"
+					width="100%"
+					includeInLayout="{useRegDateForm}"
+					label="{regDateLabel}"
+					visible="{useRegDateForm}">
+
+			<s:layout>
+
+				<s:HorizontalLayout gap="10"/>
+
+			</s:layout>
+
+			<mx:DateField id="startRegDate"
+						  yearNavigationEnabled="true"
+						  change="startRegDate_changeHandler(event)"
+						  formatString="YYYY-MM-DD"/>
+
+			<mx:DateField id="endRegDate"
+						  yearNavigationEnabled="true"
+						  change="endRegDate_changeHandler(event)"
+						  formatString="YYYY-MM-DD"/>
+
+		</s:FormItem>
+
+		<s:FormItem id="serialNoForm"
+					width="100%"
+					includeInLayout="{useSerialNoForm}"
+					label="{serialNoLabel}"
+					visible="{useSerialNoForm}">
+
+			<common:SZTextInput id="serialNoInput" restrict="^'" maxChars="50"/>
+
+		</s:FormItem>
+		
+		<s:FormItem id="isoVersionForm"
+					width="100%"
+					includeInLayout="{useSerialNoForm}"
+					label="{DmosFramework.getInstance().SNL('SC_ISO_VERSION')}"
+					visible="{useSerialNoForm}">
+			
+			<common:SZTextInput id="isoVersionInput" restrict="^'" maxChars="50"/>
+			
+		</s:FormItem>
+
+		<s:FormItem id="managementIdForm"
+					width="100%"
+					includeInLayout="{useManagementIdForm}"
+					label="{managementIdLabel}"
+					visible="{useManagementIdForm}">
+
+			<common:SZTextInput id="managementIdInput" restrict="^'" maxChars="50"/>
+
+		</s:FormItem>
+
+		<s:FormItem id="classForm"
+					width="100%"
+					includeInLayout="{useClassForm}"
+					label="{classLabel}"
+					visible="{useClassForm}">
+			
+			<!-- change="classListAllSelected_changeHandler(event)"
+			
+			<s:CheckBox id="classListAllSelected"
+						label="{DmosFramework.getInstance().SNL('SC_ALL_SELECT_D4')}"
+						click="classListAllSelected_clickHandler(event)"/>
+			-->
+			
+			<s:ToggleButton id="classListAllSelected"
+						skinClass="spark.skins.spark.ToggleButtonSkin"
+						label="{DmosFramework.getInstance().SNL('SC_ALL_SELECT_D4')}"
+						click="classListAllSelected_clickHandler(event)"/>
+			
+			<s:List id="classList"
+					width="100%"
+					styleName="s_List_FormItemTransparentBackGround">
+
+				<s:itemRenderer>
+
+					<fx:Component>
+
+						<s:ItemRenderer left="0" right="0" top="0" bottom="0">
+
+							<fx:Script>
+								<![CDATA[
+									import mx.events.FlexEvent;
+									import mx.collections.IList;
+									import com.saferzone.defcon4.common.DmosFramework;
+
+									//------------------------------------------------------------------------------
+									//
+									// Properties #public 
+									//
+									//------------------------------------------------------------------------------
+									
+									override public function set data(value:Object):void
+									{
+										super.data = value;
+										
+										if(data.hasOwnProperty("className"))
+											check.label = data.className;
+										
+										if(data.hasOwnProperty("checked"))
+											check.selected = data.checked;
+										
+										if(data.hasOwnProperty("enable"))
+											check.selected = data.enable;
+									}
+									
+									//------------------------------------------------------------------------------
+									//
+									// Methods 
+									//
+									//------------------------------------------------------------------------------
+									
+									//--------------------------------------
+									// Event Handlers 
+									//--------------------------------------
+									
+									protected function check_changeHandler(event:Event):void
+									{
+										//data.checked = check.selected;
+										data.enable = check.selected;
+									}
+								
+								]]>
+							</fx:Script>
+							
+							<s:CheckBox id="check"
+										left="2" right="2" top="2" bottom="2"
+										change="check_changeHandler(event)" selected="{data.enable}"/>
+
+						</s:ItemRenderer>
+
+					</fx:Component>
+
+				</s:itemRenderer>
+
+			</s:List>
+
+		</s:FormItem>
+		<!-- 퇴사자 -->
+		<s:FormItem id="retireForm"
+					width="100%"
+					includeInLayout="{useRetireForm}"
+					label="{retireLabel}"
+					visible="{useRetireForm}">
+			
+			<s:CheckBox id="retireCheck"
+						label="{DmosFramework.getInstance().SNL('SC_RETIRE_EMPLOYEE')}"
+						/>
+		</s:FormItem>
+		
+		<s:FormItem id="empNameForm"
+					width="100%"
+					includeInLayout="{useEmpNameForm}"
+					label="{empNameLabel}"
+					visible="{useEmpNameForm}">
+
+			<common:SZTextInput id="empNameInput" restrict="^'" maxChars="50"/>
+
+		</s:FormItem>
+
+		<s:FormItem id="deptForm"
+					width="100%"
+					includeInLayout="{useDeptForm}"
+					label="{deptLabel}"
+					visible="{useDeptForm}">
+<!--
+			<s:layout>
+
+				<s:HorizontalLayout gap="10"/>
+
+			</s:layout>
+-->
+			<!-- //20130408 김정욱 검색창에서 이전 검색  조건 중 부서 값 출력 안되는 현상 수정  #1647 - START -->
+			<common:SZTextInput id="deptInput" restrict="^'" maxChars="50" editable="true" />
+			<!-- //20130408 김정욱 검색창에서 이전 검색  조건 중 부서 값 출력 안되는 현상 수정  #1647 - END -->
+			
+			<s:Button id="browseDeptButton"
+					  visible="false" includeInLayout="false"
+					  label="{DmosFramework.getInstance().SNL('SC_SEARCH')}"
+					  styleName="s_Button_Search"
+					  click="browseDeptButton_clickHandler(event)"/>
+
+		</s:FormItem>
+
+		<s:FormItem id="managerForm"
+					width="100%"
+					includeInLayout="{useManagerForm}"
+					label="{managerLabel}"
+					visible="{useManagerForm}">
+
+			<common:SZTextInput id="managerInput" restrict="^'" maxChars="50"/>
+
+		</s:FormItem>
+
+		<s:FormItem id="mediaTypeForm"
+					width="100%"
+					includeInLayout="{useMediaTypeForm}"
+					label="{mediaTypeLabel}"
+					visible="{useMediaTypeForm}">
+
+			<s:DropDownList id="mediaTypeSelector"
+							labelField="mediaName"
+							requireSelection="true"/>
+
+		</s:FormItem>
+
+		<s:FormItem id="stateForm"
+					width="100%"
+					includeInLayout="{useStateForm}"
+					label="{stateLabel}"
+					visible="{useStateForm}">
+
+			<s:DropDownList id="stateSelector"
+							labelField="stateName"
+							requireSelection="true"/>
+
+		</s:FormItem>
+		
+		<s:FormItem id="requestStateForm"
+					width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_TAKEKOUT_STATE')}">
+			
+			<s:DropDownList id="requestStateSelector"
+							dataProvider="{requestStateProvider}"
+							selectedIndex="0"/>
+			
+		</s:FormItem>
+
+	</s:Form>
+
+	<s:PopUpAnchor id="deptSearchAnchor"
+				   includeInLayout="false">
+
+		<common:DeptSearchPopup id="deptSearchPopup"
+								close="deptSearchPopup_closeHandler(event)"
+								confirm="deptSearchPopup_confirmHandler(event)"
+								useIncludeSubDeptOption="{useIncludeSubDeptOption}"/>
+
+	</s:PopUpAnchor>
+
+	<s:controlBarLayout>
+
+		<s:HorizontalLayout horizontalAlign="center"
+							verticalAlign="middle"
+							gap="10"/>
+
+	</s:controlBarLayout>
+
+	<s:controlBarContent>
+
+		<common:SZButton id="confirmButton"
+				  label="{DmosFramework.getInstance().SNL('SC_OK')}"
+				  click="confirmButton_clickHandler(event)"/>
+
+		<common:SZButton id="cancelButton"
+				  label="{DmosFramework.getInstance().SNL('SC_CANCEL')}"
+				  />
+
+	</s:controlBarContent>
+
+	<s:filters>
+
+		<s:DropShadowFilter alpha="0.8"
+							blurX="15"
+							blurY="15"
+							distance="5"/>
+
+	</s:filters>
+
+</s:TitleWindow>

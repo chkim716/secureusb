@@ -1,0 +1,574 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:common="http://defcon4.saferzone.com/common"
+			   xmlns:controls="com.saferzone.defcon4.susbma.policycommon.controls.*"
+			   minWidth="400" minHeight="350" applicationComplete="initApp()" frameRate="60"
+			   initialize="initializeHandler()" preloaderChromeColor="0x031d3e"
+			   remove="removeApp(event)" viewSourceURL="srcview/index.html">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.Icons;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			private var facade:ApplicationFacade;
+			
+			[Bindable]public var approvalReadyTimeArr:ArrayCollection;
+			[Bindable]public var approvalReadyTimeTypeArr:ArrayCollection = new ArrayCollection([
+				{label:DmosFramework.getInstance().SNL('SC_MINUTE'), value:"0"},
+				{label:DmosFramework.getInstance().SNL('SC_HOUR'), value:"1"},
+				{label:DmosFramework.getInstance().SNL('SC_DAY'), value:"2"}
+			]);
+			[Bindable]public var emergencyToolApplyTimeArr:ArrayCollection;
+			[Bindable]public var emergencyToolApplyTimeTypeArr:ArrayCollection = new ArrayCollection([
+				{label:DmosFramework.getInstance().SNL('SC_MINUTE'), value:"0"},
+				{label:DmosFramework.getInstance().SNL('SC_HOUR'), value:"1"}
+			]);
+			[Bindable]public var alertTimeArr:ArrayCollection;
+			[Bindable]public var alertTimeTypeArr:ArrayCollection = new ArrayCollection([
+				{label:DmosFramework.getInstance().SNL('SC_MINUTE'), value:"0"},
+				{label:DmosFramework.getInstance().SNL('SC_HOUR'), value:"1"}
+			]);
+			[Bindable]public var registerRequestPreiodTypeArr:ArrayCollection = new ArrayCollection([
+				{label:DmosFramework.getInstance().SNL('SC_USER_CHOICE'), value:"0"},
+				{label:DmosFramework.getInstance().SNL('SC_SAHRE_UNLIMITED'), value:"1"},
+				{label:DmosFramework.getInstance().SNL('SC_USER_CHOICE_UNLIMITLED'), value:"2"}
+			]);
+			
+			[Bindable]public var userModifyAutoCarryInArr:ArrayCollection = new ArrayCollection([
+				{label:DmosFramework.getInstance().SNL('SC_CHNAGE_DEPT_CONTINUE_USE'), value:"0"},
+				{label:DmosFramework.getInstance().SNL('SC_POLICY_DENY'), value:"1"},
+				{label:DmosFramework.getInstance().SNL('SC_AUTO_USB_RETURN'), value:"2"}
+			]);
+			
+			
+			[Bindable]public var userDeleteAutoCarryInArr:ArrayCollection = new ArrayCollection([
+				{label:DmosFramework.getInstance().SNL('SC_USE_CONTINUE'), value:"0"},
+				{label:DmosFramework.getInstance().SNL('SC_POLICY_DENY'), value:"1"},
+				{label:DmosFramework.getInstance().SNL('SC_AUTO_USB_RETURN'), value:"2"}
+			]);
+			
+			[Bindable]public var reqReturnPwdInitArr:ArrayCollection = new ArrayCollection([
+				{label:DmosFramework.getInstance().SNL('SC_UNUSE'), value:"0"},
+				{label:DmosFramework.getInstance().SNL('SC_USER_CHOICE'), value:"1"},
+				{label:DmosFramework.getInstance().SNL('SC_FORCE_APPLY'), value:"2"}
+			]);
+			
+			[Bindable]public var reqReturnDataDelArr:ArrayCollection = new ArrayCollection([
+				{label:DmosFramework.getInstance().SNL('SC_UNUSE'), value:"0"},
+				{label:DmosFramework.getInstance().SNL('SC_USER_CHOICE'), value:"1"},
+				{label:DmosFramework.getInstance().SNL('SC_FORCE_APPLY'), value:"2"}
+			]);
+			
+			[Bindable]public var passwordInitDataDeleteArr:ArrayCollection = new ArrayCollection([
+				{label:DmosFramework.getInstance().SNL('SC_UNUSE'), value:"0"},
+				{label:DmosFramework.getInstance().SNL('SC_USE'), value:"1"},
+				{label:DmosFramework.getInstance().SNL('SC_USER_CHOICE'), value:"2"}
+			]);
+			
+			[Bindable]public var usbPermOutUseLimitArr:ArrayCollection = new ArrayCollection([
+				{label:DmosFramework.getInstance().SNL('SC_POLICY_DENY'), value:"0"},
+				{label:DmosFramework.getInstance().SNL('SC_AUTO_USB_RETURN'), value:"1"}
+			]);
+			
+			[Bindable] public var deptTypeArr:ArrayCollection = new ArrayCollection([
+				{isDeptType:0, labelName:DmosFramework.getInstance().SNL('SC_PUBLIC')},
+				{isDeptType:1, labelName:DmosFramework.getInstance().SNL('SC_ISONLYDEPT')},
+				{isDeptType:2, labelName:DmosFramework.getInstance().SNL('SC_INDI')}
+			]);
+			
+			
+			[Bindable]public var isAgentlessWebUse:Boolean = DmosFramework.getInstance().CONFIG("AGENTLESS_MNGWEB_USE")=="1"?true:false;
+			
+			[Bindable]public var isMultiApprovalUse:Boolean = DmosFramework.getInstance().CONFIG("POLICY_APPROVAL_TYPE")=="1"?true:false;
+			
+			private function initializeHandler():void
+			{
+				// 크로스도메인 설정
+				Security.allowDomain("*");
+			}
+			
+			private function initApp():void
+			{	
+				var pid:String;
+				var userId:String;
+				var programId:String;
+				var programSeq:String;
+				if(parameters["pid"])
+				{
+					pid = parameters["pid"];
+					var elements:Array = pid.split(":");
+					userId = elements[0];
+					programId = elements[1];
+					programSeq = elements[2];
+				}
+				
+				facade = ApplicationFacade.getInstance(pid ? pid : ApplicationFacade.NAME);
+				
+				facade.pid = pid;
+				facade.userId = userId;
+				facade.programId = programId;
+				facade.programSeq = programSeq;
+				facade.applicationStartup(this);
+				
+				approvalReadyTimeType.selectedIndex = 0;
+				approvalReadyTimeDataSet();
+				
+				emergencyToolApplyTimeType.selectedIndex = 0;
+				emergencyToolApplyTimeDataSet();
+				
+				alertLogOutTimeType.selectedIndex = 0;
+				alertLogOutTimeDataSet();
+			}
+			
+			private function removeApp(event:Event):void
+			{
+				facade.removeInstance();
+			}
+			
+			protected function group1_initializeHandler(event:FlexEvent):void
+			{
+		
+			}
+			
+			protected function approvalReadyTimeDataSet():void
+			{
+				var returnArr:ArrayCollection = new ArrayCollection();
+				
+				if(approvalReadyTimeType.selectedIndex == 0) 
+				{
+					for(var i=0; i < 60; i++) {
+						if(i%10 == 0 ){
+							returnArr.addItem({label:i, value:i});
+						}
+					}
+				}else if(approvalReadyTimeType.selectedIndex == 1)
+				{
+					for(var i=0; i < 24; i++) { returnArr.addItem({label:i, value:i}); }
+				}else
+				{
+					for(var i=0; i < 31; i++) { returnArr.addItem({label:i, value:i}); }
+				}
+				
+				approvalReadyTimeArr = returnArr;
+				approvalReadyTime.selectedIndex = 0;
+				
+			}		
+			
+			protected function approvalReadyTimeType_changeHandler(event:IndexChangeEvent):void
+			{
+				approvalReadyTimeDataSet();
+			}
+			
+			protected function alertLogOutTimeDataSet():void
+			{
+				var returnArr:ArrayCollection = new ArrayCollection();
+				
+				if(alertLogOutTimeType.selectedIndex == 0) 
+				{
+					for(var i=0; i < 60; i++) {
+						if(i%10 == 0 ){
+							returnArr.addItem({label:i, value:i});
+						}
+					}
+				}else
+				{
+					for(var i=0; i < 24; i++) { returnArr.addItem({label:i, value:i}); }
+				}
+				
+				alertTimeArr = returnArr;
+				alertLogOutTime.selectedIndex = 0;
+				
+			}		
+			
+			protected function alertLogOutTimeDataSet_changeHandler(event:IndexChangeEvent):void
+			{
+				alertLogOutTimeDataSet();				
+			}
+			
+			protected function emergencyToolApplyTimeDataSet():void
+			{
+				var returnArr:ArrayCollection = new ArrayCollection();
+				
+				if(emergencyToolApplyTimeType.selectedIndex == 0) 
+				{
+					for(var i=0; i < 60; i++) {
+						if(i%10 == 0 ){
+							returnArr.addItem({label:i, value:i});
+						}
+					}
+				}else
+				{
+					for(var i=0; i < 24; i++) { returnArr.addItem({label:i, value:i}); }
+				}
+				
+				emergencyToolApplyTimeArr = returnArr;
+				emergencyToolApplyTime.selectedIndex = 0;
+				
+			}		
+			
+			protected function emergencyToolApplyTimeType_changeHandler(event:IndexChangeEvent):void
+			{
+				emergencyToolApplyTimeDataSet();				
+			}
+			
+			protected function scrollerMouseWheelHandler(event:MouseEvent):void
+			{
+				event.preventDefault();
+				optionGroup.verticalScrollPosition -= event.delta * 4;
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:RadioButtonGroup id="secureUsbDataDeleteGroup" />
+		<s:RadioButtonGroup id="fileUnitCompleteDeleteGroup" />
+		<s:RadioButtonGroup id="carryoutInsideUseGroup" />
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout />
+	</s:layout>
+	
+	<common:ToolBar width="1024">
+		
+		<s:Button id="saveBtn"
+				  icon="{Icons.ICON_SAVE_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_SAVE')}"/>
+		
+		<s:Button id="reloadBtn"
+				  icon="{Icons.ICON_REFRESH_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_REFRESH')}"/>
+		
+	</common:ToolBar>
+	
+	<s:Scroller width="100%" height="100%">
+		<s:Group id="optionGroup" mouseWheel="scrollerMouseWheelHandler(event)" clipAndEnableScrolling="true">
+			<s:Panel title="{DmosFramework.getInstance().SNL('SC_COMMON_POLICY')}" width="1024" height="1000">					
+				<s:HGroup width="100%" height="100%">
+					
+					<s:VGroup width="50%" height="100%">
+						
+						<common:SubTitleLabel color="0xFFFFFF" text="{DmosFramework.getInstance().SNL('SC_USER_POPUP')}"/>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_POPUP_USE_CHOICE')}" width="100%"/>
+							<common:SZButton id="popupUseChoice"
+											 label="{DmosFramework.getInstance().SNL('SC_SET')}"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_POPUP_DURATION')}" width="100%"/>
+							<s:TextInput id="popupDuration" width="50" maxChars="3" visible="true" restrict="0-9" textAlign="right" height="18" paddingBottom="0" paddingLeft="0" paddingRight="3" paddingTop="0" />
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_SECO_D4') + ' (1~999)'}"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_REGISTER_PERIOD_BEFORE_END_POPUP')}" width="100%"/>
+							<s:TextInput id="registerPeriodBeforeEndPopup" width="50" maxChars="3" visible="true" restrict="0-9" textAlign="right" height="18" paddingBottom="0" paddingLeft="0" paddingRight="3" paddingTop="0" />
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_DAY') + ' (1~999)'}"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_CARRYOUT_PERIOD_BEFORE_END_POPUP')}" width="100%"/>
+							<s:TextInput id="carryoutPeriodBeforeEndPopup" width="50" maxChars="3" visible="true" restrict="0-9" textAlign="right" height="18" paddingBottom="0" paddingLeft="0" paddingRight="3" paddingTop="0" />
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_DAY') + ' (1~999)'}"/>
+						</s:HGroup>
+						
+						<s:Label text="{'(※ ' + DmosFramework.getInstance().SNL('SC_PERIOD_BEFORE_END_POPUP_TEXT') + ')'}" paddingLeft="25"/>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_UNREGISTER_SECUREUSB_REGISTER_GUIDE')}" width="100%"/>
+							<s:ToggleButton id="unRegisterSecureUsbRegisterGuide"/>
+						</s:HGroup>
+						
+						<common:SubTitleLabel color="0xFFFFFF" text="{DmosFramework.getInstance().SNL('SC_SECUREUSB_AUTO_LOGOUT')}" paddingTop="20"/>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_UNUSE_TIME')}" width="100%"/>
+							<s:TextInput id="unUseTime" width="50" maxChars="2" visible="true" restrict="0-9" textAlign="right" height="18" paddingBottom="0" paddingLeft="0" paddingRight="3" paddingTop="0" />
+						</s:HGroup>
+						
+						<s:Label text="{'(※ ' + DmosFramework.getInstance().SNL('SC_UNUSE_TIME_TEXT') + ')'}" paddingLeft="25"/>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_USBALERTLOGOUTTIME')}" width="100%"/>
+							<s:DropDownList id="alertLogOutTime" width="70" dataProvider="{alertTimeArr}" selectedIndex="0" />
+							<s:DropDownList id="alertLogOutTimeType" width="70" dataProvider="{alertTimeTypeArr}" change="alertLogOutTimeDataSet_changeHandler(event)" selectedIndex="0" />
+						</s:HGroup>
+						
+						<s:Label text="{'(' + DmosFramework.getInstance().SNL('SC_USBALERTLOGOUTTIME_ABOUT') + ')'}" paddingLeft="25"/>
+						
+						<common:SubTitleLabel color="0xFFFFFF" text="{DmosFramework.getInstance().SNL('SC_SECUREUSB_DATA_DELETE_TYPE')}"  paddingTop="20"/>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:RadioButton id="completeErase"
+										   label="{DmosFramework.getInstance().SNL('SC_COMPLETE_ERASE')}"
+										   groupName="secureUsbDataDeleteGroup"/>
+							<s:RadioButton id="normalErase"
+										   label="{DmosFramework.getInstance().SNL('SC_NORMAL_ERASE')}"
+										   groupName="secureUsbDataDeleteGroup"/>
+						</s:HGroup>
+						
+						<s:Label text="{'(※ ' + DmosFramework.getInstance().SNL('SC_COMPLETE_ERASE_TEXT') + ')'}" paddingLeft="25"/>
+						
+						<common:SubTitleLabel color="0xFFFFFF" text="{DmosFramework.getInstance().SNL('SC_SAVELOG_TYPE')}"  
+											  paddingTop="20" visible="{!isAgentlessWebUse}" includeInLayout="{!isAgentlessWebUse}" />
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" visible="{!isAgentlessWebUse}" includeInLayout="{!isAgentlessWebUse}">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_READLOG_TYPE')}" width="100%"/>
+							<s:ToggleButton id="secureUSBReadLogSave"/>
+						</s:HGroup>
+						
+						<common:SubTitleLabel color="0xFFFFFF" text="{DmosFramework.getInstance().SNL('SC_FILE_UNIT_COMPLETE_DELETE_MENU')}" paddingTop="20"/>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:RadioButton id="fileUnitCompleteDeleteMenuYES"
+										   label="{DmosFramework.getInstance().SNL('SC_USE')}"
+										   groupName="fileUnitCompleteDeleteGroup"/>
+							<s:RadioButton id="fileUnitCompleteDeleteMenuNo"
+										   label="{DmosFramework.getInstance().SNL('SC_UNUSE')}"
+										   groupName="fileUnitCompleteDeleteGroup"/>
+						</s:HGroup>
+						
+						<common:SubTitleLabel color="0xFFFFFF" text="{DmosFramework.getInstance().SNL('SC_EMERGENCY_TOOL')}" paddingTop="20"/>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_APPROVAL_CODE_APPLY_TIME')}" width="100%"/>
+							<s:DropDownList id="emergencyToolApplyTime" width="70" dataProvider="{emergencyToolApplyTimeArr}" />
+							<s:DropDownList id="emergencyToolApplyTimeType" width="70" dataProvider="{emergencyToolApplyTimeTypeArr}" change="emergencyToolApplyTimeType_changeHandler(event)" />
+						</s:HGroup>
+						
+						<s:Label text="{'(※ ' + DmosFramework.getInstance().SNL('SC_EMERGENCY_TOOL_APPROVAL_CODE_APPLY_TIME_TEXT') + ')'}" paddingLeft="25"/>
+						
+						<common:SubTitleLabel color="0xFFFFFF" text="{DmosFramework.getInstance().SNL('SC_SECURE_ADMIN_INFO')}" paddingTop="20"/>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_OUTPUT_CONTENT')}" width="100%"/>
+							<common:SZButton id="secureAdminInfo"
+											 label="{DmosFramework.getInstance().SNL('SC_SET')}"/>
+						</s:HGroup>
+						
+					</s:VGroup>
+					
+					<controls:ItemSeparator height="100%"/>
+					
+					<s:VGroup width="50%" height="100%" >
+						
+						<common:SubTitleLabel color="0xFFFFFF" text="{DmosFramework.getInstance().SNL('SC_POLICY_OPTION')}"/>
+						
+						<s:VGroup visible="{!isMultiApprovalUse}" includeInLayout="{!isMultiApprovalUse}" width="100%">
+							
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_SECUREUSB_AUTO_APPROVAL')}" width="100%"/>
+								<s:ToggleButton id="usbRegisterAutoApproval"/>
+							</s:HGroup>
+	
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" visible="{isAgentlessWebUse}" includeInLayout="{isAgentlessWebUse}">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_APPROVAL_SEND_MAIL')}" width="100%"/>
+								<s:ToggleButton id="approvalSendMail"/>
+							</s:HGroup>
+							
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_APPROVAL_READY_TIME')}" width="100%"/>
+								<s:DropDownList id="approvalReadyTime" width="70" dataProvider="{approvalReadyTimeArr}" />
+								<s:DropDownList id="approvalReadyTimeType" width="70" dataProvider="{approvalReadyTimeTypeArr}" change="approvalReadyTimeType_changeHandler(event)"/>
+							</s:HGroup>
+							
+							<s:Label text="{'(※ ' + DmosFramework.getInstance().SNL('SC_APPROVAL_READY_TIME_TEXT') + ')'}" paddingLeft="25"/>
+							
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_REGISTER_REQUEST_PERIOD')}" width="100%"/>
+								<s:DropDownList id="registerRequestPeriodType" width="160" dataProvider="{registerRequestPreiodTypeArr}"/>
+							</s:HGroup>
+							
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_REGISTER_REQUEST_DEFAULT_TIME')}" width="100%"/>
+								<s:TextInput id="registerRequestDefaultTime" width="50" maxChars="3" visible="true" restrict="0-9" textAlign="right" height="18" paddingBottom="0" paddingLeft="0" paddingRight="3" paddingTop="0" />
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_DAY') + ' (1~999)'}"/>
+							</s:HGroup>
+							
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_CARRYOUT_REQUEST_DEFAULT_TIME')}" width="100%"/>
+								<s:TextInput id="carryoutRequestDefaultTime" width="50" maxChars="3" visible="true" restrict="0-9" textAlign="right" height="18" paddingBottom="0" paddingLeft="0" paddingRight="3" paddingTop="0" />
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_DAY') + ' (1~999)'}"/>
+							</s:HGroup>
+							
+							<s:Label text="{'(※ ' + DmosFramework.getInstance().SNL('SC_CARRYOUT_REQUEST_DEFAULT_TIME_TEXT') + ')'}" paddingLeft="25"/>
+							
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" visible="{isAgentlessWebUse}" includeInLayout="{isAgentlessWebUse}">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_CARRYOUT_REQUEST_IP_USE')}" width="100%"/>
+								<s:ToggleButton id="carryoutRequestIpUse"/>
+							</s:HGroup>
+							
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" visible="{isAgentlessWebUse}" includeInLayout="{isAgentlessWebUse}">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_CARRYOUT_REQUEST_MAC_USE')}" width="100%"/>
+								<s:ToggleButton id="carryoutRequestMacUse"/>
+							</s:HGroup>
+							
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" visible="{isAgentlessWebUse}" includeInLayout="{isAgentlessWebUse}">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_CARRYOUT_REQUEST_ONOFF_USE')}" width="100%"/>
+								<s:ToggleButton id="carryoutRequestOnOffUse"/>
+							</s:HGroup>
+	<!--					
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_CARRYOUT_INSIDE_USE')}" width="100%"/>
+								<s:ToggleButton id="carryoutInsideUse"/>
+							</s:HGroup>
+	-->						
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_CARRYOUT_REQUEST_FILE_SAVE')}" width="100%"/>
+								<s:ToggleButton id="carryoutOriginalFileSave"/>
+							</s:HGroup>
+							
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" visible="{isAgentlessWebUse}" includeInLayout="{isAgentlessWebUse}">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_RETURN_REQUEST_DATA_DELETE')}" width="100%"/>
+								<s:DropDownList id="reqReturnDataDel" width="160" dataProvider="{reqReturnDataDelArr}" />
+							</s:HGroup>
+							
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" visible="{isAgentlessWebUse}" includeInLayout="{isAgentlessWebUse}">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_RETURN_REQUEST_INIT_PASSWORD')}" width="100%"/>
+								<s:DropDownList id="reqReturnPwdInit" width="160" dataProvider="{reqReturnPwdInitArr}" />
+							</s:HGroup>
+							
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" visible="false" includeInLayout="false">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_RETURN_REQUEST_INIT_PASSWORD_SETTING')}" width="100%"/>
+								<s:TextInput id="reqReturnPwdInitDefault" visible="false" includeInLayout="false"/>
+								<common:SZButton id="reqReturnPwdInitDefaultBtn"
+												 label="{DmosFramework.getInstance().SNL('SC_SET')}"/>
+							</s:HGroup>
+							
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" visible="{isAgentlessWebUse}" includeInLayout="{isAgentlessWebUse}">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_RETURN_REQUEST_INIT_PASSWORD_SETTING')}" width="100%"/>
+								<s:TextInput id="returnApprovalPassword" visible="false" includeInLayout="false"/>
+								<common:SZButton id="returnApprovalPasswordInit"
+												 label="{DmosFramework.getInstance().SNL('SC_SET')}"/>
+							</s:HGroup>
+							
+							<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" visible="{!isAgentlessWebUse}" includeInLayout="{!isAgentlessWebUse}">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_NORMALUSB_REGIST_DENY')}" width="100%"/>
+								<s:ToggleButton id="normalUsbRegistDeny"/>
+							</s:HGroup>
+							
+						</s:VGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" >
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_REGIST_PERIOD_END_USB_USE_LIMIT')}" width="100%"/>
+							<s:DropDownList id="usbPermOutUseLimit" width="160" dataProvider="{usbPermOutUseLimitArr}" />
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_USB_TAKEOUT_USEDENY')}" width="100%"/>
+							<s:ToggleButton id="usbTakeOutUseDeny"/>
+						</s:HGroup>
+						
+						<common:SubTitleLabel color="0xFFFFFF" text="{DmosFramework.getInstance().SNL('SC_PASSWORD_INITIALIZE')}" paddingTop="20"/>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_PASSWORD_INIT_DATA_DELETE')}" width="100%"/>
+							<s:DropDownList id="passwordInitDataDelete" width="160" dataProvider="{passwordInitDataDeleteArr}" />
+						</s:HGroup>
+						
+						<common:SubTitleLabel color="0xFFFFFF" visible="{!isAgentlessWebUse}" includeInLayout="{!isAgentlessWebUse}"
+											  text="{DmosFramework.getInstance().SNL('SC_ISONLYDEPT') + ' USB ' + DmosFramework.getInstance().SNL('SC_ENABLED_STATUS')}" paddingTop="20"/>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20"
+								  visible="{!isAgentlessWebUse}" includeInLayout="{!isAgentlessWebUse}">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_DEPTTYPE_LABEL')}" width="100%"/>
+							<s:ToggleButton id="isDeptTypeUsb" />
+						</s:HGroup>
+						
+						<common:SubTitleLabel color="0xFFFFFF" 
+											  text="{DmosFramework.getInstance().SNL('SC_USER_INFO_MODIFY_OPTION')}" paddingTop="20"/>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20"
+								  >
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_USER_DEPT_MOD_USB_LIMIT')}" width="100%"/>
+							<s:DropDownList id="userModifyAutoCarryIn" width="190" dataProvider="{userModifyAutoCarryInArr}" />
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20"
+								  >
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_USER_RESIGNATION_USB_LIMIT')}" width="100%"/>
+							<s:DropDownList id="userDeleteAutoCarryIn" width="190" dataProvider="{userDeleteAutoCarryInArr}" />
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" 
+								  >
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_USER_DEPT_MOD_MNGCODE_MODE')}" width="100%"/>
+							<s:ToggleButton id="userModifyAutoMngCode"/>
+						</s:HGroup>
+						
+						<common:SubTitleLabel color="0xFFFFFF" text="{DmosFramework.getInstance().SNL('D4_SUSBMA_SYSCOMMON_MEDIANAME_SECUREUSB') + ' TrayIcon ' + DmosFramework.getInstance().SNL('SC_MENU') }" paddingTop="20"/>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" >
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_APPROVAL_REQUEST')}" width="100%"/>
+							<s:ToggleButton id="trayApprovalRequest"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" >
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_APPROVAL_APPROVAL_PERMISSION')}" width="100%"/>
+							<s:ToggleButton id="trayApprovalConfirm"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" >
+							<s:Label text="{DmosFramework.getInstance().SNL('D4_DECICATED_EXPLORER')}" width="100%"/>
+							<s:ToggleButton id="trayApprovalExplorer"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" >
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_NFC_REGIST')}" width="100%"/>
+							<s:ToggleButton id="trayNFCRegist"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" >
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_EMERGENCY_TOOL')}" width="100%"/>
+							<s:ToggleButton id="trayApprovalEmergency"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" >
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_PASSWD_MANAGEMENT')}" width="100%"/>
+							<s:ToggleButton id="trayPasswdManagement"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_SECUREUSB_TRAYICON_MENU_USE')}" width="100%"/>
+							<s:ToggleButton id="trayIconPasswordInit"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_SAFE_REMOVE')}" width="100%"/>
+							<s:ToggleButton id="traySafeRemove"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20">
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_ANTI_FORENSIC')}" width="100%"/>
+							<s:ToggleButton id="trayAntiForensic"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" >
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_POLICY_INFO_PERMISSION')}" width="100%"/>
+							<s:ToggleButton id="trayPolicyInfo"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" verticalAlign="middle" paddingLeft="20" >
+							<s:Label text="{DmosFramework.getInstance().SNL('SC_BASIC_INFO_PERMISSION')}" width="100%"/>
+							<s:ToggleButton id="trayDefaultInfo"/>
+						</s:HGroup>
+						
+					</s:VGroup>
+					
+				</s:HGroup>
+				
+			</s:Panel>
+		</s:Group>
+	</s:Scroller>	
+	
+</s:Application>

@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  remove="removeHandler(event)"
+		  focusOut="main_focusOutHandler(event)"
+		  creationComplete="creationCompleteHandler(event)"
+		  xmlns:common="http://defcon4.saferzone.com/common">
+
+	<fx:Metadata>
+		[Event(name="CUSTOM_CHECKBOX_CLICK", type="com.saferzone.defcon4.susbma.policy.event.CustomCheckBoxClickEvent")]
+	</fx:Metadata>
+
+	<fx:Script>
+		<![CDATA[
+
+			import mx.collections.ArrayCollection;
+			import spark.components.DataGrid;
+			import spark.events.GridEvent;
+			import mx.events.FlexEvent;
+			
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.Icons;
+			import com.saferzone.defcon4.services.vo.SusbmaPolicyMasterVO;
+			import com.saferzone.defcon4.susbma.policy.event.CustomCheckBoxClickEvent;
+			
+			
+			//------------------------------------------------------------------------------
+			//
+			// Properties #public 
+			//
+			//------------------------------------------------------------------------------
+			
+			//--------------------------------------
+			// deptArr 
+			//--------------------------------------
+			
+			[Bindable]
+			public var deptArr:ArrayCollection = new ArrayCollection();
+			
+			//--------------------------------------
+			// rangeType 
+			//--------------------------------------
+			
+			private var _rangeType:int;
+			
+			public function get rangeType():int
+			{
+				return _rangeType;
+			}
+			
+			public function set rangeType(val:int):void
+			{
+				_rangeType = val;
+			}
+			
+			//------------------------------------------------------------------------------
+			//
+			// Methods 
+			//
+			//------------------------------------------------------------------------------
+			
+			//--------------------------------------
+			// public 
+			//--------------------------------------
+			
+			public function dataUpdateFunction(vo:SusbmaPolicyMasterVO):void
+			{
+				dispatchEvent(new CustomCheckBoxClickEvent(CustomCheckBoxClickEvent.CUSTOM_CHECKBOX_CLICK,
+														   vo));
+			}
+
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+//				deptDG.addEventListener(MouseEvent.MOUSE_MOVE , deptGridmouseMoveHandler);
+			}
+			
+			protected function removeHandler(event:Event):void
+			{
+//				deptDG.removeEventListener(MouseEvent.MOUSE_MOVE , deptGridmouseMoveHandler);
+			}
+			
+			protected function ToopTipViewTimerHandler(e:TimerEvent):void
+			{
+				PopupLabel.displayPopUp = false;
+			}
+			
+			protected function agentDG_gridRollOutHandler(e:GridEvent):void
+			{	
+				PopupLabel.displayPopUp = false;
+			}
+			
+			protected function agentDG_gridRollOverHandler(event:GridEvent):void
+			{
+				if(event.item == null) {
+					PopupLabel.displayPopUp = false;
+					return;
+				}else{
+					PopupLabel.x = mouseX -3;
+					PopupLabel.y = mouseY -3;
+					PopupLabel.displayPopUp = true;
+					try{
+						ToolTip.text = event.item.fullOrgName;	
+					}catch(error:Error){
+						return;
+					}	
+				}
+			}
+			
+			protected function main_focusOutHandler(e:FocusEvent):void
+			{
+				PopupLabel.displayPopUp = false;
+			}
+			
+			protected function ToolTipCheckMouseOver(e:MouseEvent):void
+			{
+				if(!(e.currentTarget is spark.components.DataGrid))PopupLabel.displayPopUp = false;
+			}
+			
+			protected function MouseMoveHandler(event:Event):void
+			{
+				PopupLabel.x = mouseX -3;
+				PopupLabel.y = mouseY -3;
+				if(event.currentTarget.mouseX >= event.currentTarget.width-50)
+				{
+					PopupLabel.displayPopUp = false;
+				}
+			}
+			
+			private function dataTipFunc(item:Object, column:GridColumn):String {
+				var tooltip:String = "";
+				
+				if(item != null)
+				{
+					if(column.dataField == "orgName")
+					{
+						tooltip = item.fullOrgName;	
+					}
+					else
+					{
+						tooltip = item[column.dataField];
+					}
+				}
+				
+				return tooltip;
+			}
+		]]>
+	</fx:Script>
+
+	<common:ToolBar width="100%">
+
+		<s:Button id="addBtn"
+				  icon="{Icons.ICON_ADD_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_ADD')}"/>
+
+		<s:Button id="delBtn"
+				  icon="{Icons.ICON_REMOVE_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_DELETE')}"/>
+
+		<common:ToolBarSeparator/>
+
+		<s:Button id="reloadBtn"
+				  icon="{Icons.ICON_REFRESH_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_REFRESH')}"/>
+		
+		<s:Spacer width="100%"/>
+		
+		<s:Label id="countLabel"
+				 height="100%"
+				 verticalAlign="middle"
+				 text="{DmosFramework.getInstance().SNL('SC_SEARCH_RESULT')} {deptArr.length}"/>
+
+	</common:ToolBar>
+
+	<!--
+	mouseMove="MouseMoveHandler(event)"
+	gridRollOver="agentDG_gridRollOverHandler(event)"
+	gridRollOut="agentDG_gridRollOutHandler(event)"
+	-->
+	<s:DataGrid id="deptDG"
+				width="100%" height="100%"
+				dataProvider="{deptArr}"
+				dataTipFunction="dataTipFunc">
+
+		<s:columns>
+
+			<s:ArrayList>
+
+				<!--등록일자-->
+				<s:GridColumn id="regDate"
+							  width="150" minWidth="150"
+							  dataField="regDate" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+							  headerText="{DmosFramework.getInstance().SNL('SC_REGDATE_SERVER')}"/>
+
+				<!--부서명-->
+				<s:GridColumn id="orgName"
+							  width="120" minWidth="120"
+							  dataField="orgName" showDataTips="true" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+							  headerText="{DmosFramework.getInstance().SNL('SC_DEPT')}"/>
+
+				<!--하위부서포함-->
+				<s:GridColumn id="incChild"
+							  dataField="incChild" 
+							  headerText="{DmosFramework.getInstance().SNL('SC_INCLUDE_SUB_DEPT')}"
+							  itemRenderer="com.saferzone.defcon4.susbma.policy.renderer.CheckItemRenderer"/>
+
+			</s:ArrayList>
+
+		</s:columns>
+
+	</s:DataGrid>
+
+	<!-- DataGrid 툴팁 표시 -->
+	<s:PopUpAnchor id="PopupLabel" displayPopUp="false">
+		<s:BorderContainer  backgroundColor="0xFFE08C" borderVisible="true" id="ToolTipContainer"
+							height="30" alpha="0.8"  visible="true" includeInLayout="true">
+			<s:VGroup width="100%" height="100%" verticalAlign="middle" gap="5" >
+				<s:HGroup verticalAlign="middle">
+					<s:Label text="{DmosFramework.getInstance().SNL('SC_POLICY_APPLY_DEPT') + ' : '}" color="0xff0000" />
+					<s:Label id="ToolTip" width="100%" color="0x000000"  />	
+				</s:HGroup>	
+			</s:VGroup>
+		</s:BorderContainer>
+	</s:PopUpAnchor>
+	
+</s:VGroup>

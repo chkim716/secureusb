@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   title="{DmosFramework.getInstance().SNL('SC_SEARCH')}" 
+			   controlBarVisible="true" 
+			   creationComplete="onCreateCompleteHandler()"
+			   xmlns:common="http://defcon4.saferzone.com/common">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.consts.CustomerId;
+			
+			protected function isRange_clickHandler(event:MouseEvent):void
+			{
+				if(isRange.selected)
+				{
+					endInventorySno.enabled = true;
+					endInventorySno.setFocus();
+				}
+				else
+				{
+					endInventorySno.enabled = false;
+					endInventorySno.text = "";
+				}
+			}
+			
+			private function onCreateCompleteHandler():void
+			{
+				
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.HUNDAIKIA){
+					startCharacter.visible = startCharacter.includeInLayout = true; 
+					startInventorySno.maxChars = endInventorySno.maxChars = 4;
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+
+	</fx:Declarations>
+	
+	<s:Form>
+		<s:FormItem width="100%" label="{DmosFramework.getInstance().SNL('SC_SECUREUSB_TYPE')}" visible="false" includeInLayout="false">
+			<s:DropDownList id="secureUsbType" labelField="label" width="150" selectedIndex="0">
+				<s:ArrayCollection>
+					<!--all-->
+					<fx:Object label="{DmosFramework.getInstance().SNL('SC_ALL')}" value="-1"/>
+					<!--보안USB 2.0-->
+					<fx:Object label="{DmosFramework.getInstance().SNL('SC_SECUREUSB_2.0')}" value="0"/>
+					<!--보안USB 3.0-->
+					<fx:Object label="{DmosFramework.getInstance().SNL('SC_SECUREUSB_3.0')}" value="3"/>
+					<!--보안SSD PW-->
+					<fx:Object label="{DmosFramework.getInstance().SNL('SC_SECURE_SSD_PW')}" value="1"/>
+					<!--보안SSD NFC-->
+					<fx:Object label="{DmosFramework.getInstance().SNL('SC_SECURE_SSD_NFC')}" value="2"/>
+					<!--보안SSD PW+NFC-->
+					<fx:Object label="{DmosFramework.getInstance().SNL('SC_SECURE_SSD_PW_NFC')}" value="4"/>
+				</s:ArrayCollection>
+			</s:DropDownList>	
+		</s:FormItem>
+		<!--서버등록일--> 
+		<s:FormItem width="100%" label="{DmosFramework.getInstance().SNL('SC_CHANGE_DATE')}">
+			<s:layout>
+				<s:HorizontalLayout gap="10"/>
+			</s:layout>
+			<mx:DateField id="startRegDate" yearNavigationEnabled="true" formatString="YYYY-MM-DD"/>
+			<s:Label text="~"/>
+			<mx:DateField id="endRegDate" yearNavigationEnabled="true" formatString="YYYY-MM-DD"/>
+		</s:FormItem>
+		
+		<!--시작USB번호 - 일련번호 6자-->
+		<s:FormItem width="100%" label="{DmosFramework.getInstance().SNL('SC_SERIAL_NO')}">
+			<s:HGroup verticalAlign="middle">
+				<common:SZTextmxInput id="startCharacter" maxChars="2" width="30" restrict="a-zA-Z" visible="false" includeInLayout="false"/>
+				<common:SZTextmxInput id="startInventorySno" maxChars="6" width="50" restrict="0-9"/>	
+				<s:Label text="~" />
+				<common:SZTextmxInput id="endInventorySno" maxChars="6" width="55" restrict="0-9" enabled="{isRange.selected}"/>
+				<s:CheckBox id="isRange" label="{DmosFramework.getInstance().SNL('SC_RANGE_DESIGNATION')}" selected="false" click="isRange_clickHandler(event)"/>
+			</s:HGroup>
+		</s:FormItem>
+		
+		<!--사용자ID--> 
+		<s:FormItem width="100%" label="{DmosFramework.getInstance().SNL('SC_EMP_NO')}">
+			<common:SZTextmxInput id="userEmpId" restrict="^'" width="100"/>
+		</s:FormItem>
+		
+		<!--사용자명--> 
+		<s:FormItem width="100%" label="{DmosFramework.getInstance().SNL('SC_EMP_NAME')}">
+			<common:SZTextmxInput id="userEmpName" restrict="^'" width="100"/>
+		</s:FormItem>
+		
+		<!--부서명-->
+		<!--s:FormItem width="100%" label="{DmosFramework.getInstance().SNL('SC_DEPT_NAME')}">
+			<common:SZTextmxInput id="userOrgName" restrict="^'" maxChars="50" width="211"/>
+		</s:FormItem-->
+	</s:Form>
+	
+	<s:controlBarLayout>
+		<s:HorizontalLayout horizontalAlign="center" verticalAlign="middle" gap="10"/>
+	</s:controlBarLayout>
+	
+	<s:controlBarContent>
+		<s:VGroup width="100%" horizontalAlign="left">
+			
+			<s:Label text="{DmosFramework.getInstance().SNL('SC_INVENTORY_ADD_DESCRIPTION')}" color="red"   includeInLayout="false" visible="false"/>
+			
+			<s:HGroup width="100%" horizontalAlign="center">
+				
+				<common:SZButton id="okBtn"
+								 label="{DmosFramework.getInstance().SNL('SC_SEARCH')}"
+								 styleName="popupButtonSkin"/>
+				
+				<common:SZButton id="cancelBtn"
+								 label="{DmosFramework.getInstance().SNL('SC_CANCEL')}"
+								 styleName="popupButtonSkin"/>
+				
+			</s:HGroup>
+		</s:VGroup>
+	</s:controlBarContent>
+	
+</s:TitleWindow>

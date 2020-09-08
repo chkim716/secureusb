@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   title="{DmosFramework.getInstance().SNL('SC_UPDATE_THE_STOC_D4')}" 
+			   creationComplete="onCreateCompleteHandler()"
+			   controlBarVisible="true" 
+			   xmlns:common="http://defcon4.saferzone.com/common">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.consts.CustomerId;
+			
+			import mx.collections.ArrayCollection;
+
+			[Bindable]
+			public var officeArr:ArrayCollection = new ArrayCollection([
+				{officeId:0, officeName:DmosFramework.getInstance().SNL('SFA_INVENTORY_STRING_000001')},
+				{officeId:1, officeName:DmosFramework.getInstance().SNL('SFA_OFFICE_ASAN')},
+				{officeId:2, officeName:DmosFramework.getInstance().SNL('SFA_OFFICE_HWASUNG')}
+			]);
+			
+			private function onCreateCompleteHandler():void
+			{
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.WOORIBANK){
+					receiveState.visible = receiveState.includeInLayout = true;	
+				}
+				
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.SFA){
+					targetCodeForm.visible = targetCodeForm.includeInLayout = false;
+					reasonForm.visible = reasonForm.includeInLayout = false;
+					waveLabel.visible = waveLabel.includeInLayout = false;
+					endInventorySno.visible = endInventorySno.includeInLayout = false;
+					isRange.visible = isRange.includeInLayout = false;
+					sfa_mngCodeForm.visible = sfa_mngCodeForm.includeInLayout = true;
+					sfa_officeForm.visible = sfa_officeForm.includeInLayout = true;
+				}
+				
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.HUNDAIKIA){
+					startCharacter.visible = startCharacter.includeInLayout = true; 
+					startInventorySno.maxChars = endInventorySno.maxChars = 4;
+					capacityForm.label = DmosFramework.getInstance().SNL('SC_CAPACITY_TOTAL');
+					dataCapacityForm.visible = dataCapacityForm.includeInLayout = true;
+				}
+			}
+			
+			protected function isRange_clickHandler(event:MouseEvent):void
+			{
+				if(isRange.selected)
+				{
+					endInventorySno.enabled = true;
+					endInventorySno.setFocus();
+				}
+				else
+				{
+					endInventorySno.enabled = false;
+					endInventorySno.text = "";
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:RadioButtonGroup id="receiveGroup"/>
+	</fx:Declarations>
+	
+	<s:Form>
+		<s:FormItem width="100%" label="{DmosFramework.getInstance().SNL('SC_SECUREUSB_TYPE')}" visible="false" includeInLayout="false">
+			<common:SZTextmxInput id="secureUsbType" enabled="false"/>
+		</s:FormItem>
+		
+		<!--시작USB번호 - 일련번호 6자-->
+		<s:FormItem width="100%" label="{DmosFramework.getInstance().SNL('SC_SERIAL_NO')}">
+			<s:HGroup verticalAlign="middle">
+				<common:SZTextmxInput id="startCharacter" maxChars="2" width="30" restrict="a-zA-Z" visible="false" includeInLayout="false"/>
+				<common:SZTextmxInput id="startInventorySno" maxChars="6" width="55" restrict="0-9"/>
+				<s:Label text="~" id="waveLabel"/>
+				<common:SZTextmxInput id="endInventorySno" maxChars="6" width="55" restrict="0-9" enabled="{isRange.selected}"/>
+				<s:CheckBox id="isRange" label="{DmosFramework.getInstance().SNL('SC_RANGE_DESIGNATION')}" selected="false" click="isRange_clickHandler(event)"/>
+			</s:HGroup>
+		</s:FormItem>
+		
+		<!--전체 용량-->
+		<s:FormItem width="100%" id="capacityForm" label="{DmosFramework.getInstance().SNL('SC_CAPACITY')}">
+			<s:HGroup verticalAlign="bottom">
+				<common:SZTextmxInput id="capacity" maxChars="4" width="55" restrict="0-9"/>
+				<s:Label text="GB"/>	
+			</s:HGroup>
+		</s:FormItem>
+		
+		<!--데이터 용량-->
+		<s:FormItem width="100%" id="dataCapacityForm" label="{DmosFramework.getInstance().SNL('SC_CAPACITY_DATA')}" visible="false" includeInLayout="false">
+			<s:HGroup verticalAlign="bottom">
+				<common:SZTextmxInput id="dataCapacity" maxChars="4" width="55" restrict="0-9"/>
+				<s:Label text="GB"/>	
+			</s:HGroup>
+		</s:FormItem>
+		
+		<!-- ISO 버전 -->
+		<s:FormItem width="100%" id="isoVersionForm"
+					label="{DmosFramework.getInstance().SNL('SC_ISO_VERSION')}">
+			<common:SZTextmxInput id="isoVersion" width="200" maxChars="100"/>
+		</s:FormItem>
+		
+		<!-- 부서(발급대상) -->
+		<s:FormItem width="100%" label="{DmosFramework.getInstance().SNL('SC_MANAGE_DEPT')}" id="targetCodeForm">
+			<s:HGroup verticalAlign="bottom">
+				<common:SZTextmxInput id="deptId" editable="false" visible="false" includeInLayout="false" restrict="^'"/>
+				<common:SZTextmxInput id="deptName" editable="false" restrict="^'"/>
+				<s:Button id="searchBtn" label="{DmosFramework.getInstance().SNL('SC_SEARCH')}"  styleName="s_Button_Search"/>
+			</s:HGroup>
+		</s:FormItem>
+		
+		<!-- 수령상태 -->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_RECEIVE_STAT_D4')}" id="receiveState" visible="false" includeInLayout="false">
+			<s:HGroup>
+				<!--수령-->
+				<s:RadioButton id="receive"
+							   label="{DmosFramework.getInstance().SNL('SC_RECE_D4')}"
+							   groupName="receiveGroup"/>
+				<!--미수령-->
+				<s:RadioButton id="notReceive"
+							   label="{DmosFramework.getInstance().SNL('SC_NOT_RECE_D4')}"
+							   groupName="receiveGroup"/>
+			</s:HGroup>
+		</s:FormItem>
+		
+		<!--입고사유-->
+		<s:FormItem width="100%" id="reasonForm"
+					label="{DmosFramework.getInstance().SNL('SC_REASON')}">
+			<common:SZTextmxInput id="inventoryReason" width="200" maxChars="100"/>
+		</s:FormItem>
+		
+		<!-- 관리번호 -->
+		<s:FormItem width="100%" id="sfa_mngCodeForm" visible="false" includeInLayout="false"
+					label="{DmosFramework.getInstance().SNL('SC_MANAGE_NO')}" >
+			<s:HGroup>
+				<common:SZTextmxInput id="sfa_mngCode" restrict="^'" editable="false"/>
+				<s:Button id="manageNoSearchBtn" label="{DmosFramework.getInstance().SNL('SC_SEARCH')}"  styleName="s_Button_Search"/>	
+			</s:HGroup>
+		</s:FormItem>
+		
+		<!-- 신청 사업장 -->
+		<s:FormItem id="sfa_officeForm" width="100%" visible="false" includeInLayout="false"
+					label="{DmosFramework.getInstance().SNL('SFA_OFFICE_REQUEST')}">
+			<s:HGroup>
+				<s:DropDownList id="sfa_office" dataProvider="{officeArr}" labelField="officeName" width="200" selectedIndex="0"/>
+			</s:HGroup>
+		</s:FormItem>
+	</s:Form>
+	
+	<s:controlBarLayout>
+		<s:HorizontalLayout horizontalAlign="center"/>
+	</s:controlBarLayout>
+	
+	<s:controlBarContent>
+		<s:VGroup width="100%" horizontalAlign="left">
+			
+			<s:Label text="{DmosFramework.getInstance().SNL('SC_INVENTORY_ADD_DESCRIPTION')}" color="red" includeInLayout="false" visible="false"/>
+			
+			<s:HGroup width="100%" horizontalAlign="center">
+				
+				<common:SZButton id="okBtn"
+								 label="{DmosFramework.getInstance().SNL('SC_MODIFY')}"
+								 styleName="popupButtonSkin"/>
+				
+				<common:SZButton id="cancelBtn"
+								 label="{DmosFramework.getInstance().SNL('SC_CANCEL')}"
+								 styleName="popupButtonSkin"/>
+				
+			</s:HGroup>
+		</s:VGroup>
+	</s:controlBarContent>
+	
+</s:TitleWindow>

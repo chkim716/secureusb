@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  creationComplete="vgroup1_creationCompleteHandler(event)"
+		  xmlns:common="http://defcon4.saferzone.com/common">
+
+	<fx:Metadata>
+		[Event(name="CUSTOM_CHECKBOX_CLICK", type="com.saferzone.defcon4.susbma.policy.event.CustomCheckBoxClickEvent")]
+	</fx:Metadata>
+
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.Icons;
+			import com.saferzone.defcon4.common.consts.CustomerId;
+			import com.saferzone.defcon4.services.vo.SusbmaPolicyMasterVO;
+			import com.saferzone.defcon4.susbma.policy.event.CustomCheckBoxClickEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			//------------------------------------------------------------------------------
+			//
+			// Properties #public 
+			//
+			//------------------------------------------------------------------------------
+			
+			//--------------------------------------
+			// classArr 
+			//--------------------------------------
+			
+			[Bindable]
+			public var classArr:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var isAspService:Boolean = DmosFramework.getInstance().CONFIG('SAFERZONE_ASP_SERVICE_USE')=="1"?true:false
+			
+			//--------------------------------------
+			// rangeType 
+			//--------------------------------------
+			
+			private var _rangeType:int;
+			
+			public function get rangeType():int
+			{
+				return _rangeType;
+			}
+			
+			public function set rangeType(val:int):void
+			{
+				_rangeType = val;
+			}
+			
+			//------------------------------------------------------------------------------
+			//
+			// Methods 
+			//
+			//------------------------------------------------------------------------------
+			
+			//--------------------------------------
+			// public 
+			//--------------------------------------
+			
+			public function dataUpdateFunction(vo:SusbmaPolicyMasterVO):void
+			{
+				dispatchEvent(new CustomCheckBoxClickEvent(CustomCheckBoxClickEvent.CUSTOM_CHECKBOX_CLICK,
+														   vo));
+			}
+
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.CC_V5) {
+					modBtn.visible = false;
+				}
+				
+				if(isAspService){
+					orgName.visible = true;
+				}else{
+					orgName.visible = false;
+				}
+				
+				
+			}
+			
+			private function dataTipFunc(item:Object, column:GridColumn):String {
+				var tooltip:String = "";
+				
+				if(item != null)
+				{
+					if(column.dataField == "orgName")
+					{
+						tooltip = item.fullOrgName;	
+					}
+					else
+					{
+						tooltip = item[column.dataField];
+					}
+				}
+				
+				return tooltip;
+			}
+		]]>
+	</fx:Script>
+
+	<common:ToolBar width="100%">
+
+		<s:Button id="modBtn"
+				  icon="{Icons.ICON_MODIFY_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_MODIFY')}"/>
+
+		<common:ToolBarSeparator/>
+
+		<s:Button id="reloadBtn"
+				  icon="{Icons.ICON_REFRESH_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_REFRESH')}"/>
+
+	</common:ToolBar>
+
+	<s:DataGrid id="classDG"
+				width="100%" height="100%"
+				dataProvider="{classArr}"
+				dataTipFunction="dataTipFunc">
+
+		<s:columns>
+
+			<s:ArrayList>
+
+				<!--사용여부-->
+				<s:GridColumn id="enable"
+							  width="100"
+							  dataField="enable"
+							  headerText="{DmosFramework.getInstance().SNL('SC_USE')}"
+							  itemRenderer="com.saferzone.defcon4.susbma.policy.renderer.CheckItemRenderer"
+							  resizable="false"
+							  sortable="false"/>
+
+				<!--그룹명-->
+				<s:GridColumn id="groupName"
+							  dataField="className" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="true"
+							  headerText="{DmosFramework.getInstance().SNL('SC_GROUP')}"/>
+				
+				<!--고객사명-->
+				<s:GridColumn id="orgName" 
+							  dataField="orgName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="true"
+							  headerText="{DmosFramework.getInstance().SNL('SC_CUSTOMER_NAME')}"/>
+
+			</s:ArrayList>
+
+		</s:columns>
+
+	</s:DataGrid>
+
+</s:VGroup>

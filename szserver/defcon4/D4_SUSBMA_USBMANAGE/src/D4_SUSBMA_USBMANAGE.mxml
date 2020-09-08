@@ -1,0 +1,1172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:common="http://defcon4.saferzone.com/common"
+			   xmlns:components="com.saferzone.defcon4.susbma.usbmanage.view.comp.*"
+			   minWidth="400" minHeight="300" applicationComplete="initApp()"
+			   creationComplete="creationCompleteHandler(event)" frameRate="60"
+			   initialize="initializeHandler()" preloaderChromeColor="0x031d3e"
+			   remove="removeApp(event)" scriptTimeLimit="120">
+
+	<fx:Declarations>
+
+		<!-- Filters --> 
+		<s:DropShadowFilter id="dropShadowFilter"
+							distance="2"/> 
+
+		<s:ArrayList id="intervalArr">
+
+			<fx:Number>10</fx:Number>
+
+			<fx:Number>30</fx:Number>
+
+			<fx:Number>60</fx:Number>
+
+			<fx:Number>180</fx:Number>
+
+			<fx:Number>300</fx:Number>
+
+		</s:ArrayList>
+
+		<s:ArrayList id="rowCountArr">
+
+			<fx:Number>50</fx:Number>
+
+			<fx:Number>100</fx:Number>
+
+			<fx:Number>200</fx:Number>
+
+			<fx:Number>500</fx:Number>
+
+			<fx:Number>1000</fx:Number>
+
+		</s:ArrayList>
+
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.Icons;
+			import com.saferzone.defcon4.common.consts.CustomerId;
+			import com.saferzone.defcon4.susbma.usbmanage.ApplicationFacade;
+			
+			import flashx.textLayout.edit.SelectionState;
+			import flashx.textLayout.events.SelectionEvent;
+			
+			import mx.accessibility.AlertAccImpl;
+			import mx.collections.ArrayCollection;
+			import mx.collections.IList;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.events.FlexEvent;
+			
+			import spark.core.NavigationUnit;
+			import spark.effects.easing.Linear;
+			import spark.events.GridEvent;
+			import spark.events.GridSelectionEvent;
+			
+			
+			//------------------------------------------------------------------------------
+			//
+			// Properties #public 
+			//
+			//------------------------------------------------------------------------------
+			
+			[Bindable]
+			public var usbArr:ArrayCollection;
+			
+			[Bindable]
+			public var searchResultCount:int;
+			[Bindable]
+			public var searchResultCount2:int;
+			[Bindable]
+			public var searchResultCount3:int;
+			
+			[Bindable]
+			public var serialMarkType:Boolean = DmosFramework.getInstance().CONFIG("SUSBMA_SNO_MARKTYPE")=="1"?true:false;
+			public var agentlessMngWebConfig:Boolean = DmosFramework.getInstance().CONFIG("AGENTLESS_MNGWEB_USE")=="1"?true:false;
+			private var toolTipOption:Boolean = DmosFramework.getInstance().CONFIG("DEPT_TOOLTIP_OPTION")=="1"?true:false;
+			private var SaferZoneVersion:int = int(DmosFramework.getInstance().CONFIG("SAFERZONE_VERSION"))
+			private var tabView:String = DmosFramework.getInstance().CONFIG("SUSB_USBMANAGE_TABVIEW");
+			
+			//------------------------------------------------------------------------------
+			//
+			// Properties #private 
+			//
+			//------------------------------------------------------------------------------
+			
+			private var facade:ApplicationFacade;
+			
+			//------------------------------------------------------------------------------
+			//
+			// Methods 
+			//
+			//------------------------------------------------------------------------------
+			
+			//--------------------------------------
+			// Event Handlers 
+			//--------------------------------------
+			
+			private function removeApp(event:Event):void
+			{
+				facade.removeInstance();
+			}
+			
+			
+			//--------------------------------------
+			// private 
+			//--------------------------------------
+			
+			private function initializeHandler():void
+			{
+				// 크로스도메인 설정
+				Security.allowDomain("*");
+			}
+			
+			private function initApp():void
+			{
+				usbArr = new ArrayCollection();
+				
+				var pid:String;
+				var userId:String;
+				var programId:String;
+				var programSeq:String;
+				if(parameters["pid"])
+				{
+					pid = parameters["pid"] + (getTimer() * Math.random()).toString(); //-> 원래 아래꺼인데 충돌문제로 우선이렇게...
+					//pid = parameters["pid"];
+					var elements:Array = pid.split(":");
+					userId = elements[0];
+					programId = elements[1];
+					programSeq = elements[2];
+				}
+				
+				facade = ApplicationFacade.getInstance(pid ? pid : ApplicationFacade.NAME);
+				
+				facade.pid = pid;
+				facade.userId = userId;
+				facade.programId = programId;
+				facade.programSeq = programSeq;
+				facade.applicationStartup(this);
+				
+				var isShowCSVBtn:Boolean = DmosFramework.getInstance().CONFIG("SHOW_CSV_BUTTON")=="1"?true:false;
+				excelBtn.visible = isShowCSVBtn;
+				excelBtn.includeInLayout = isShowCSVBtn;
+				
+				var capacityBool:Boolean = DmosFramework.getInstance().CONFIG("USB_VISIBLE_CAPACITY")=="1"?true:false; // 용량 - 0안보임/1보임
+				if(!capacityBool)
+				{
+					removeColumn(usbDG, capacity.dataField);
+				}
+				
+//				var isDeptTypeBool:Boolean = DmosFramework.getInstance().CONFIG("USB_CHECK_ISDEPTTYPE")=="1"?true:false; // 용량 - 0안보임/1보임
+//				if(!isDeptTypeBool)
+//				{
+//					removeColumn(usbDG, isDeptTypeLabel.dataField);
+//				}
+				var isCCBool:Boolean = DmosFramework.getInstance().CUSTOMERID == CustomerId.CC_V5?true:false;
+				if(isCCBool)
+				{
+					addBtn.visible = addBtn.includeInLayout = false;
+				}
+				
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.WOORIBANK){
+					returnBtn.visible = returnBtn.includeInLayout = true;
+					addBtn.visible = delBtn.visible = false;
+					addBtn.includeInLayout = delBtn.includeInLayout = false;
+					requestStateLabel.visible = true;
+				}
+				
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.KNBANK){
+					returnBtn.visible = returnBtn.includeInLayout = true;
+				}
+				
+				if(DmosFramework.getInstance().CUSTOMERID != CustomerId.HUNDAIKIA){
+					removeColumn(usbDG, dataCapacity.dataField);
+				}else{
+					capacity.headerText = DmosFramework.getInstance().SNL('SC_CAPACITY_TOTAL');
+				}
+				
+				var isTimeCheckBool:Boolean = DmosFramework.getInstance().CONFIG("USB_USE_PERIOD")=="1"?true:false; // 용량 - 0안보임/1보임
+				if(!isTimeCheckBool)
+				{
+					removeColumn(usbDG, permStartDate.dataField);
+					removeColumn(usbDG, permEndDate.dataField);
+				}
+				
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.MMA){
+					excelBtn.toolTip = DmosFramework.getInstance().SNL('SC_FILE_EXPORT');
+				}
+				
+				if(agentlessMngWebConfig)
+				{
+					removeColumn(useHistoryDG, netBiosName.dataField);
+					removeColumn(useHistoryDG, spcOrgName.dataField);
+					removeColumn(useHistoryDG, spcEmpName.dataField);
+					removeColumn(useHistoryDG, spcEmpId.dataField);
+					removeColumn(usbDG, isDeptTypeLabel.dataField);
+				}
+				
+				if(SaferZoneVersion >= 2)
+				{
+					addBtn.toolTip = DmosFramework.getInstance().SNL('SC_ADD2') + '(' + DmosFramework.getInstance().SNL('SC_REG') +')';
+//					delBtn.toolTip = DmosFramework.getInstance().SNL('SC_RETU_D4') + '(' + DmosFramework.getInstance().SNL('SC_REVOKED') +')';
+					spcWanIp.headerText = DmosFramework.getInstance().SNL('SC_SESSION_IP');
+					//removeColumn(useHistoryDG, lanIp.dataField);
+					//spcWanIp.minWidth = 100;
+				}else{
+					removeColumn(usbDG, requestStateLabel.dataField);
+					removeColumn(usbDG, policyDenyName.dataField);
+					removeColumn(usbDG, secureUsbTypeLabel.dataField);
+					
+					tabNavi.getTabAt(2).visible = tabNavi.getTabAt(2).includeInLayout = false;
+					tabNavi.getTabAt(3).visible = tabNavi.getTabAt(3).includeInLayout = false;
+					tabNavi.getTabAt(4).visible = tabNavi.getTabAt(4).includeInLayout = false;
+				}
+				
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.SFA){
+					managementId.visible  = true;
+				}
+				
+				if(DmosFramework.getInstance().CUSTOMERID == 22){
+					removeColumn(usbDG, secureUsbTypeLabel.dataField);
+				}
+				
+				if(tabView.substr(0,1) == '0' )
+				{
+					tabNavi.getTabAt(2).visible = tabNavi.getTabAt(2).includeInLayout = false;
+				}
+				
+				if(tabView.substr(1,1) == '0' )
+				{
+					tabNavi.getTabAt(3).visible = tabNavi.getTabAt(3).includeInLayout = false;	
+				}
+				
+				if(tabView.substr(2,1) == '0' )
+				{
+					tabNavi.getTabAt(4).visible = tabNavi.getTabAt(4).includeInLayout = false;	
+				}
+				
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.GS){
+					addBtn.visible = addBtn.includeInLayout = false;
+					delBtn.visible = delBtn.includeInLayout = false;
+					isoVersion.visible = secureUsbTypeLabel.visible = stateName.visible = policyDenyName.visible = 
+						requestStateLabel.visible = isDeptTypeLabel.visible = capacity.visible = false;
+					regdate.width = 310;
+					removeColumn(usbDG, isoVersion.dataField);
+					removeColumn(usbDG, secureUsbTypeLabel.dataField);
+					removeColumn(usbDG, stateName.dataField);
+					removeColumn(usbDG, policyDenyName.dataField);
+					removeColumn(usbDG, requestStateLabel.dataField);
+					removeColumn(usbDG, isDeptTypeLabel.dataField);
+					removeColumn(usbDG, capacity.dataField);
+				}
+				
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.GS){
+					addBtn.visible = addBtn.includeInLayout = false;
+					delBtn.visible = delBtn.includeInLayout = false;
+					isoVersion.visible = secureUsbTypeLabel.visible = stateName.visible = policyDenyName.visible = 
+						requestStateLabel.visible = isDeptTypeLabel.visible = capacity.visible = false;
+					regdate.width = 310;
+					removeColumn(usbDG, isoVersion.dataField);
+					removeColumn(usbDG, secureUsbTypeLabel.dataField);
+					removeColumn(usbDG, stateName.dataField);
+					removeColumn(usbDG, policyDenyName.dataField);
+					removeColumn(usbDG, requestStateLabel.dataField);
+					removeColumn(usbDG, isDeptTypeLabel.dataField);
+					removeColumn(usbDG, capacity.dataField);
+				}
+			}
+			
+			
+			protected function removeColumn(dataGrid:DataGrid, dataField:String):void
+			{
+				var column:GridColumn;
+				var columns:IList = dataGrid.columns; 
+				
+				var length:int = columns.length;
+				for(var i:int = 0; i < length; i++)
+				{
+					column = columns.getItemAt(i) as GridColumn;
+					if(column.dataField == dataField)
+					{
+						columns.removeItemAt(i);
+						break;
+					}
+				}
+			}
+			
+			protected function usbDG_clickHandler(event:MouseEvent):void
+			{
+				trace(event);
+			}
+			
+			protected function gridRollOutHandler(e:GridEvent):void
+			{	
+				FullDeptNamePop.displayPopUp = false;
+			}
+			
+			protected function gridRollOverHandler(event:GridEvent):void
+			{
+				if(event.item == null) {
+					FullDeptNamePop.displayPopUp = false;
+					return;
+				}else{
+					if(toolTipOption)
+					{
+						if(event.column.dataField == 'userOrgName')
+						{
+							if(event.item.userOrgName != null)
+							{
+								FullDeptNamePop.displayPopUp = true;
+								tooltipFullDeptName.ToolTip.text = "";
+								tooltipFullDeptName.ToolTip.text = event.item.userFullOrgName;
+							}
+						}
+						else if(event.column.dataField == 'pcOrgName')
+						{
+							if(event.item.pcOrgName != null)
+							{
+								FullDeptNamePop.displayPopUp = true;
+								tooltipFullDeptName.ToolTip.text = "";
+								tooltipFullDeptName.ToolTip.text = event.item.pcFullOrgName;
+							}
+						}else{
+							FullDeptNamePop.displayPopUp = false;
+						}
+					}
+					else
+					{
+						FullDeptNamePop.displayPopUp = false;
+					}
+				}
+			}
+			
+			protected function MouseMoveHandler(event:Event):void
+			{
+				FullDeptNamePop.x = mouseX -3;
+				FullDeptNamePop.y = mouseY -1;
+			}
+			
+			private function labelFunction(item:Object, column:GridColumn):String
+			{
+				var label:String = "";
+				if(column.dataField == "sno")
+				{
+					if(serialMarkType){
+						label = String(item[column.dataField]); 
+					}else{
+						if(int(item["mediaId"]) == 0){
+							label = "#" + String(item[column.dataField]).substr(String(item[column.dataField]).length - 5 ,5);	
+						}else if(int(item["mediaId"]) == 1){
+							label = String(item[column.dataField]).substr(String(item[column.dataField]).length - 6 ,6);
+						}else{
+							label = "#" + String(item[column.dataField]).substr(String(item[column.dataField]).length - 5 ,5);
+						}
+					}
+				}
+				else if(column.dataField == "updateTarget")
+				{
+					if(int(item["updateTarget"]) == 0){
+						label = "전사";
+					}else if(int(item["updateTarget"]) == 1){
+						label = "부서";
+					}else if(int(item["updateTarget"]) == 2){
+						label = "사용자";
+					}else if(int(item["updateTarget"]) == 3){
+						label = "USB";
+					}
+				}
+				else 
+				{
+					if(String(item[column.dataField]).length > 7)
+					{
+						label = String(item[column.dataField]).substr(0 ,7) + "..";	
+					}else{
+						label = String(item[column.dataField]);	
+					}
+				}
+				
+				return label; 
+			}
+			
+			private function dataTipFunc(item:Object, column:GridColumn):String {
+				var tooltip:String = "";
+				
+				if(item != null)
+				{
+					if(column.dataField == "userOrgName")
+					{
+						tooltip = item.userFullOrgName;	
+					}
+					else if(column.dataField == "spcOrgName")
+					{
+						tooltip = item.spcFullOrgName;	
+					}
+					else{
+						tooltip = item[column.dataField];
+					}
+				}
+				
+				return tooltip;
+			}
+			
+			protected function scrollToThere(dir:uint):void {
+				var value:Number = btnGrp.getHorizontalScrollPositionDelta(dir);
+				
+				if (value != 0) 
+				{
+					pth.valueBy = value;
+					anim.play();
+				}
+				else
+				{
+					if(dir == NavigationUnit.PAGE_LEFT)
+					{
+						value = btnGrp.getHorizontalScrollPositionDelta(NavigationUnit.HOME);
+						pth.valueBy = value;
+						anim.play();
+					}
+					if(dir == NavigationUnit.PAGE_RIGHT)
+					{
+						value = btnGrp.getHorizontalScrollPositionDelta(NavigationUnit.END);
+						pth.valueBy = value;
+						anim.play();
+					}
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:Animate id="anim" target="{btnGrp}" duration="500">
+			<s:motionPaths>
+				<s:SimpleMotionPath id="pth" property="horizontalScrollPosition" />
+			</s:motionPaths>
+		</s:Animate>
+	</fx:Declarations>
+
+	<mx:DividedBox width="100%" height="100%"
+				   direction="horizontal" >
+
+		<s:Panel width="200" height="100%" styleName="s_Panel_Background">
+			
+			<common:DeptNavigator id="deptNavigator"
+								  width="100%" height="100%"/>
+		</s:Panel>
+
+		<s:Panel width="100%" height="100%" styleName="s_Panel_Background" >
+
+			<mx:DividedBox width="100%" height="100%"
+						   direction="vertical" >
+
+				<s:VGroup width="100%" height="100%">
+
+					<common:ToolBar id="toolBar" width="100%">
+						
+						<s:Button id="prevBtn" width="30"
+								  icon="{Icons.ICON_PREV_16}"
+								  click="scrollToThere(NavigationUnit.PAGE_LEFT);"/>
+						
+						<s:HGroup id="btnGrp" minWidth="615" width="75%" 
+								  clipAndEnableScrolling="true">
+							
+							<s:DropDownList id="reloadMode" selectedIndex="0">
+								<s:dataProvider>
+									<s:ArrayList>
+										<fx:Object label="{DmosFramework.getInstance().SNL('PRIVACY_OWN_NOT_AUTOREFLASH')}" value="0"/>
+										<fx:Object label="{'1' + DmosFramework.getInstance().SNL('SC_MINUTE')}" value="1"/>
+										<fx:Object label="{'3' + DmosFramework.getInstance().SNL('SC_MINUTE')}" value="3"/>
+										<fx:Object label="{'5' + DmosFramework.getInstance().SNL('SC_MINUTE')}" value="5"/>
+										<fx:Object label="{'10' + DmosFramework.getInstance().SNL('SC_MINUTE')}" value="10"/>
+										<fx:Object label="{'15' + DmosFramework.getInstance().SNL('SC_MINUTE')}" value="15"/>
+										<fx:Object label="{'20' + DmosFramework.getInstance().SNL('SC_MINUTE')}" value="20"/>
+										<fx:Object label="{'30' + DmosFramework.getInstance().SNL('SC_MINUTE')}" value="30"/>
+										<fx:Object label="{'40' + DmosFramework.getInstance().SNL('SC_MINUTE')}" value="40"/>
+										<fx:Object label="{'50' + DmosFramework.getInstance().SNL('SC_MINUTE')}" value="50"/>
+										<fx:Object label="{'60' + DmosFramework.getInstance().SNL('SC_MINUTE')}" value="60"/>
+									</s:ArrayList>
+								</s:dataProvider>
+							</s:DropDownList>
+							
+							<common:ToolBarSeparator/>
+							<s:Button id="searchBtn"
+										  icon="{Icons.ICON_SEARCH_16}"
+										  toolTip="{DmosFramework.getInstance().SNL('SC_SEARCH')}"/>
+	
+							<s:Button id="reloadBtn"
+									  icon="{Icons.ICON_REFRESH_16}"
+									  toolTip="{DmosFramework.getInstance().SNL('SC_REFRESH')}"/>
+							
+							<s:Button id="initBtn"
+									  icon="{Icons.ICON_INIT_16}"
+									  toolTip="{DmosFramework.getInstance().SNL('SC_RESET')}"/>
+								
+							<s:Button id="excelBtn"
+									  icon="{Icons.ICON_EXPORT_TO_EXCEL_16}"
+									  toolTip="{DmosFramework.getInstance().SNL('SC_EXPORT_TO_EXCEL')}"/>
+							
+							<common:ToolBarSeparator width="20"/>
+						
+							<s:Button id="addBtn"
+									  icon="{Icons.ICON_ADD_16}"
+									  toolTip="{DmosFramework.getInstance().SNL('SC_ADD')}"/>
+	
+							<s:Button id="delBtn"
+									  icon="{Icons.ICON_REMOVE_16}"
+									  toolTip="{DmosFramework.getInstance().SNL('SC_RETU_D4') + '(' + DmosFramework.getInstance().SNL('SC_REVOKED') + ')'}"/>
+							
+							<s:Button id="modBtn"
+									  icon="{Icons.ICON_MODIFY_16}"
+									  toolTip="{DmosFramework.getInstance().SNL('SC_MODIFY_PROPERTY')}"/>
+	
+							<s:Button id="unUseBtn"
+									  icon="{Icons.ICON_USB_DESTROY_16}"
+									  toolTip="{DmosFramework.getInstance().SNL('SC_DISUSE')}"/>
+							
+							<common:ToolBarSeparator width="20"/>
+		
+							<s:Button id="pwdInitBtn"
+									  icon="{Icons.ICON_PASSWORDDELETE_16}"
+									  toolTip="{DmosFramework.getInstance().SNL('SC_PASSWORD_INITIALIZE')}"/>
+						
+							<s:Button id="emergencyToolBtn"
+									  icon="{Icons.ICON_CREATE_KEY_16}"
+									  toolTip="{DmosFramework.getInstance().SNL('SC_EMERGENCY_TOOL_MANAGEMENT')}"/>
+							
+							<!-- 반납 -->
+							<s:Button id="returnBtn"
+									  visible="false" includeInLayout="false"
+									  icon="{Icons.ICON_GUIDE_16}"
+									  toolTip="{DmosFramework.getInstance().SNL('SC_APPROVAL_USB_RETURN')}"/>
+							
+						</s:HGroup>	
+
+						<s:HGroup id="rightGrp" width="25%" maxWidth="350" horizontalAlign="right">
+							
+							<s:Button id="nextBtn" width="30"
+									  icon="{Icons.ICON_NEXT_16}"
+									  click="scrollToThere(NavigationUnit.PAGE_RIGHT);"/>
+								
+							<s:DropDownList id="renewalInterval"
+											dataProvider="{intervalArr}"
+											includeInLayout="false"
+											selectedIndex="0"
+											visible="false"/>
+	
+							<s:DropDownList id="rowCount"
+											dataProvider="{rowCountArr}"
+											includeInLayout="false"
+											selectedIndex="0"
+											visible="false"/>
+	
+							<s:Spacer width="100%"/>
+	
+							<s:Label id="countLabel"
+									 height="100%"
+									 verticalAlign="middle"
+									 text="{DmosFramework.getInstance().SNL('SC_SEARCH_RESULT') + searchResultCount}"/>
+	
+							<common:SZColumnSettingButton id="columnSettingBtn" 
+														  dragGrid="{usbDG}"
+														  parentWnd="{this}"/>
+							
+						</s:HGroup>
+
+					</common:ToolBar>
+					
+					<common:DragGrid id="usbDG"
+									 width="100%" height="100%"
+									 dataProvider="{usbArr}"
+									 selectionMode="multipleRows"
+									 minWidth="80" showDataTips="true"
+									 textAlign="center"
+									 dataTipFunction="dataTipFunc">
+						
+						<common:columns>
+					
+							<s:ArrayList>
+								
+										
+								<!--사용자명-->
+								<s:GridColumn id="userEmpName"
+											  width="80"
+											  dataField="userEmpName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+											  headerText="{DmosFramework.getInstance().SNL('SC_EMP_NAME')}" />
+								
+								<!--사원번호-->
+								<s:GridColumn id="userEmpId"
+											  width="80"
+											  dataField="userEmpId" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+											  headerText="{DmosFramework.getInstance().SNL('SC_EMP_NO')}"/>
+								
+								<!--부서명-->
+								<s:GridColumn id="userOrgName"
+											  width="100" 
+											  dataField="userOrgName"  itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+											  headerText="{DmosFramework.getInstance().SNL('SC_DEPT')}" />
+								
+								<s:GridColumn id="userOrgId"
+											  width="100" 
+											  dataField="userOrgId"  itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+											  headerText="{DmosFramework.getInstance().SNL('SC_DEPT_CODE')}" />
+
+								
+								<!--매체종류-->
+								<s:GridColumn id="mediaName"
+											  width="100" 
+											  dataField="mediaName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+											  headerText="{DmosFramework.getInstance().SNL('SC_MEDIATYPE')}"/>
+								
+								<s:GridColumn id="secureUsbTypeLabel"
+											  width="100"
+											  dataField="secureUsbTypeLabel" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+											  headerText="{DmosFramework.getInstance().SNL('SC_SECUREUSB_TYPE')}"/>
+								
+								<!--전체 용량-->
+								<s:GridColumn id="capacity"
+											  width="80"
+											  dataField="capacity" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+											  headerText="{DmosFramework.getInstance().SNL('SC_CAPACITY')}" />
+								
+								<!--데이터 용량-->
+								<s:GridColumn id="dataCapacity"
+											  width="80"
+											  dataField="dataCapacity" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+											  headerText="{DmosFramework.getInstance().SNL('SC_CAPACITY_DATA')}" />
+								
+								<!--등급-->
+								<s:GridColumn id="classNM"
+											  width="100"
+											  dataField="className" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+											  headerText="{DmosFramework.getInstance().SNL('SC_CLASS')}"/>
+								
+								<!--시리얼번호-->
+								<s:GridColumn id="sno"
+											  width="80"
+											  dataField="sno" labelFunction="labelFunction" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+											  headerText="{DmosFramework.getInstance().SNL('SC_SERIAL_NO')}"/>
+								
+								<!--iso버전-->
+								<s:GridColumn id="isoVersion"
+											  width="110"
+											  dataField="isoVersion" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+											  headerText="{DmosFramework.getInstance().SNL('SC_ISO_VERSION')}"/>
+								
+								<!--관리번호-->
+								<s:GridColumn id="managementId"
+											  width="120"
+											  dataField="managementId"
+											  itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+											  headerText="{DmosFramework.getInstance().SNL('SC_MANAGE_NO')}"/>
+
+								<!--관리책임자-->
+								<s:GridColumn id="mngEmpName"
+											  width="80"
+											  dataField="mngEmpName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+											  headerText="{DmosFramework.getInstance().SNL('SC_MANAGER')}"/>
+								
+								<!--상태-->
+								<s:GridColumn id="stateName"
+											  width="50"
+											  dataField="stateName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+											  headerText="{DmosFramework.getInstance().SNL('SC_STATE')}"/>		
+								
+								<!--사용금지-->
+								<s:GridColumn id="policyDenyName"
+											  width="80"
+											  dataField="policyDenyName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+											  headerText="{DmosFramework.getInstance().SNL('SC_BLOCKED_TO_USE')}"/>
+								
+								<!-- 신청상태 -->
+								<s:GridColumn id="requestStateLabel"
+											  width="100"
+											  dataField="requestStateLabel" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+											  headerText="{DmosFramework.getInstance().SNL('SC_TAKEKOUT_STATE')}"/>
+								
+								<!--부서용-->
+								<s:GridColumn id="isDeptTypeLabel"
+											  width="100"
+											  dataField="isDeptTypeLabel"  itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+											  headerText="{DmosFramework.getInstance().SNL('SC_USB_PERMISSION')}"/>
+								
+								<!-- 시작기간-->
+								<s:GridColumn id="permStartDate"
+											  width="150"
+											  dataField="permStartDate" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+											  headerText="{DmosFramework.getInstance().SNL('SC_START_PERIOD')}"/>
+								
+								<!-- 종료기간-->
+								<s:GridColumn id="permEndDate"
+											  width="150"
+											  dataField="permEndDate" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+											  headerText="{DmosFramework.getInstance().SNL('SC_END_PERIOD')}"/>
+								
+								<!--마지막접속일-->
+								<s:GridColumn id="latestConnectDate"
+											  width="150"
+											  dataField="latestConnectDate" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+											  headerText="{DmosFramework.getInstance().SNL('SC_LATEST_CONNECT_DATE')}"/>
+								
+								
+								<!--서버등록일-->
+								<s:GridColumn id="regdate"
+											  width="150"
+											  dataField="regdate"  itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+											  headerText="{DmosFramework.getInstance().SNL('SC_REGDATE_SERVER')}"/>
+								
+							</s:ArrayList>
+
+						</common:columns>
+					</common:DragGrid>
+
+				</s:VGroup>
+
+				<mx:TabNavigator id="tabNavi"
+								 width="100%" height="220"
+								 left="8" right="8" top="8" bottom="8"
+								 creationPolicy="all"
+								 horizontalGap="3"
+								 tabWidth="150">
+
+					<!--변경이력-->
+					<s:NavigatorContent id="changeHistoryTab" label="{DmosFramework.getInstance().SNL('SC_CHANGE_HISTORY')}">
+
+						<s:VGroup width="100%" height="100%">
+
+							<s:DataGrid id="changeHistoryDG" dataTipFunction="dataTipFunc"
+										width="100%" height="100%" showDataTips="true"
+										minHeight="80">
+
+								<s:columns>
+
+									<s:ArrayList>
+
+										<!--변경일자-->
+										<s:GridColumn id="changeDate"
+													  width="150"
+													  minWidth="150"
+													  dataField="changeDate" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+													  headerText="{DmosFramework.getInstance().SNL('SC_CHANGE_DATE')}"/>
+
+										<!--변경자-->
+										<s:GridColumn id="adminId"
+													  minWidth="100"
+													  width="100"
+													  dataField="adminId"  itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+													  headerText="{DmosFramework.getInstance().SNL('AGNTMA_POLICYLOG_CREATOR')}"/>
+
+										<!--상태-->
+										<s:GridColumn id="stateName2"
+													  minWidth="50"
+													  width="50"
+													  dataField="stateName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+													  headerText="{DmosFramework.getInstance().SNL('SC_STATE')}"/>
+										
+										<!--변경상태-->
+										<s:GridColumn id="reasonState"
+													  minWidth="100"
+													  width="100"
+													  dataField="reasonState" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+													  headerText="{DmosFramework.getInstance().SNL('SC_REASON_STATE')}"/> 
+
+										<!--변경사유-->
+										<s:GridColumn id="reasonName2"
+													  dataField="reasonName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+													  headerText="{DmosFramework.getInstance().SNL('SC_REASON_FOR_CHANGE')}"/> 
+
+									</s:ArrayList>
+
+								</s:columns>
+
+							</s:DataGrid>
+
+						</s:VGroup>
+
+					</s:NavigatorContent>
+
+					<!--사용이력-->
+					<s:NavigatorContent id="useHistoryTab" label="{DmosFramework.getInstance().SNL('SC_USE_HISTORY')}">
+
+						<s:VGroup width="100%" height="100%">
+
+							<s:DataGrid id="useHistoryDG"
+										width="100%" height="100%" showDataTips="true" dataTipFunction="dataTipFunc"
+										minHeight="80">
+
+								<s:columns>
+
+									<s:ArrayList>
+
+										<!--사용일자-->
+										<s:GridColumn id="useDate"
+													  width="150" minWidth="150"
+													  dataField="useDate" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+													  headerText="{DmosFramework.getInstance().SNL('SC_USE_DATE')}"/>
+
+										<!--사용위치-->
+										<s:GridColumn id="insideOfCompany"
+													  width="100" minWidth="100"
+													  dataField="insideOfCompany" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+													  headerText="{DmosFramework.getInstance().SNL('SC_USE_LOCATION')}"/>
+
+										<!--컴퓨터명-->
+										<s:GridColumn id="netBiosName"
+													  width="150" minWidth="150" 
+													  dataField="netBiosName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+													  headerText="{DmosFramework.getInstance().SNL('SC_COMPUTER_NAME')}"/>
+										
+										<!--피시부서-->
+										<s:GridColumn id="spcOrgName"
+													  width="150" minWidth="150"
+													  dataField="spcOrgName"  itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+													  headerText="{DmosFramework.getInstance().SNL('SC_PC_DEPT')}"/>
+
+										<!--PC사용자-->
+										<s:GridColumn id="spcEmpName"
+													  width="150" minWidth="150"
+													  dataField="spcEmpName"  itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+													  headerText="{DmosFramework.getInstance().SNL('SC_PC_USER')}"/>
+										<!--PC사용자-->
+										<s:GridColumn id="spcEmpId"
+													  width="150" minWidth="150"
+													  dataField="spcEmpId"  itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+													  headerText="{DmosFramework.getInstance().SNL('SC_USER_ID_BYPC')}"/>
+
+										<!--WanIP	-->
+										<s:GridColumn id="spcWanIp"
+													  dataField="spcWanIp" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+													  headerText="{DmosFramework.getInstance().SNL('SC_SESSION_IP')}"/>
+									
+									</s:ArrayList>
+
+								</s:columns>
+
+							</s:DataGrid>
+
+						</s:VGroup>
+
+					</s:NavigatorContent>
+					
+					<!--사제이력-->
+					<s:NavigatorContent id="deleteHistoryTab" label="{DmosFramework.getInstance().SNL('SC_DELETE_HISTORY')}">
+						
+						<s:VGroup width="100%" height="100%">
+							
+							<s:DataGrid id="deleteHistoryDG"
+										width="100%" height="100%" showDataTips="true" dataTipFunction="dataTipFunc"
+										minHeight="80">
+								
+								<s:columns>
+									
+									<s:ArrayList>
+										
+										<!--삭제 여부-->
+										<s:GridColumn id="isDelete"
+													  width="100" minWidth="100"
+													  dataField="isDeleteLabel" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('SC_IS_DELETE')}"/>
+										
+										<!--사내/사외-->
+										<s:GridColumn id="insideOfCompany2"
+													  width="100" minWidth="100"
+													  dataField="insideOfCompanyLabel" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+													  headerText="{DmosFramework.getInstance().SNL('SC_INSIDE_COMPANY_CHECK')}"/>
+										
+										<!--컴퓨터 명
+										<s:GridColumn id="netBiosName2"
+													  width="150" minWidth="150" 
+													  dataField="netBiosName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+													  headerText="{DmosFramework.getInstance().SNL('SC_COMPUTER_NAME')}"/>
+										-->
+										<!--OS 계정-->
+										<s:GridColumn id="hostName"
+													  width="150" minWidth="150"
+													  dataField="hostName"  itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+													  headerText="{DmosFramework.getInstance().SNL('SC_HOST_NAME')}"/>
+										
+										<!--세션 IP-->
+										<s:GridColumn id="sessionIp"
+													  width="150" minWidth="150"
+													  dataField="sessionIp"  itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+													  headerText="{DmosFramework.getInstance().SNL('SC_SESSION_IP')}"/>
+										<!--IP 주소-->
+										<s:GridColumn id="ipAddress"
+													  width="150" minWidth="150"
+													  dataField="ipAddress"  itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+													  headerText="{DmosFramework.getInstance().SNL('SC_IP_ADDRESS')}"/>
+										
+										<!--공인 IP-->
+										<s:GridColumn id="publicIp"
+													  width="150" minWidth="150"
+													  dataField="publicIp"  itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+													  headerText="{DmosFramework.getInstance().SNL('SC_PUBLIC_IP')}"/>
+										
+										<!--탐지일(PC)-->
+										<s:GridColumn id="deleteDate"
+													  width="150" minWidth="150"
+													  dataField="deleteDate" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('SC_DETECTDATE_TO_PC')}"/>
+										
+										
+										<!--탐지일(서버)-->
+										<s:GridColumn id="regDate2"
+													  dataField="regDate"  itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+													  headerText="{DmosFramework.getInstance().SNL('SC_DETECTDATE_TO_SERVER')}"/>
+																				
+									</s:ArrayList>
+									
+								</s:columns>
+								
+							</s:DataGrid>
+							
+						</s:VGroup>
+						
+					</s:NavigatorContent>
+					
+					<!--현황-->
+						<s:NavigatorContent id="usbFileListTab" label="{DmosFramework.getInstance().SNL('SC_USB_FILE_STATUS')}">
+					
+						<s:VGroup width="100%" height="100%">
+							
+							<common:ToolBar id="toolBar2" width="100%">
+								
+								<s:Button id="searchBtn2"
+										  icon="{Icons.ICON_SEARCH_16}"
+										  toolTip="{DmosFramework.getInstance().SNL('SC_SEARCH')}"/>
+								
+								<s:Button id="excelBtn2"
+										  icon="{Icons.ICON_EXPORT_TO_EXCEL_16}"
+										  toolTip="{DmosFramework.getInstance().SNL('SC_EXPORT_TO_EXCEL')}"/>
+								
+								<s:Button id="reloadBtn2"
+										  icon="{Icons.ICON_REFRESH_16}"
+										  toolTip="{DmosFramework.getInstance().SNL('SC_REFRESH')}"/>
+								
+								<s:Spacer width="100%"/>
+								
+								<s:Label id="countLabel2"
+										 height="100%"
+										 verticalAlign="middle"
+										 text="{DmosFramework.getInstance().SNL('SC_SEARCH_RESULT') + searchResultCount2}"/>
+								
+							</common:ToolBar>
+							
+							<common:DragGrid id="statusDG" textAlign="center"
+										width="100%" height="100%" showDataTips="true" dataTipFunction="dataTipFunc"
+										minHeight="80">
+								
+								<common:columns>
+									
+									<s:ArrayList>
+										<!--시리얼번호 -->
+										<s:GridColumn id="sno2"
+													  width="250" minWidth="250"
+													  dataField="sno" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('SC_SERIAL_NO')}"/>
+										
+										<s:GridColumn id="destFilePath"
+													  width="450" minWidth="450"
+													  dataField="destFilePath" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('SC_FILENAME')}"/>
+										
+										<s:GridColumn id="empName2"
+													  width="120" minWidth="120"
+													  dataField="empName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('SC_EMP_NAME')}"/>
+										
+										<s:GridColumn id="orgName2"
+													  width="150" minWidth="150"
+													  dataField="orgName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('SC_DEPT_NAME')}"/>
+										
+										<s:GridColumn id="fileSize2"
+													  width="100" minWidth="100"
+													  dataField="fileSize" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('D4_AGNTMA_FILESIZE')}"/>
+										
+										<s:GridColumn id="detectDate"
+													  width="150" minWidth="150"
+													  dataField="detectDate" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('SC_DETECTDATE_TO_PC')}"/>
+										
+										<s:GridColumn id="regDate"
+													  dataField="regDate" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('SC_DETECTDATE_TO_SERVER')}"/>
+										
+									</s:ArrayList>
+									
+								</common:columns>
+								
+							</common:DragGrid>
+							
+						</s:VGroup>
+						
+					</s:NavigatorContent>
+					
+					<!--원격삭제목록-->
+					<s:NavigatorContent id="remoteDeleteTab" label="{DmosFramework.getInstance().SNL('SC_REMOTE_DELETE_STATUS')}">
+						<s:VGroup width="100%" height="100%">
+							
+							<common:ToolBar id="toolBar3" width="100%">
+								
+								<s:Button id="searchBtn3"
+										  icon="{Icons.ICON_SEARCH_16}"
+										  toolTip="{DmosFramework.getInstance().SNL('SC_SEARCH')}"/>
+								
+								<s:Button id="excelBtn3"
+										  icon="{Icons.ICON_EXPORT_TO_EXCEL_16}"
+										  toolTip="{DmosFramework.getInstance().SNL('SC_EXPORT_TO_EXCEL')}"/>
+								
+								<s:Button id="reloadBtn3"
+										  icon="{Icons.ICON_REFRESH_16}"
+										  toolTip="{DmosFramework.getInstance().SNL('SC_REFRESH')}"/>
+							
+								<s:Spacer width="100%"/>
+								
+								<s:Label id="countLabel3"
+										 height="100%"
+										 verticalAlign="middle"
+										 text="{DmosFramework.getInstance().SNL('SC_SEARCH_RESULT') + searchResultCount3}"/>
+								
+							</common:ToolBar>
+							
+							<common:DragGrid id="remoteDeleteHistoryDG" textAlign="center"
+											 width="100%" height="100%" showDataTips="true" dataTipFunction="dataTipFunc"
+											 minHeight="80">
+								
+								<common:columns>
+									
+									<s:ArrayList>
+										
+										<!--시리얼번호 -->
+										<s:GridColumn id="sno3"
+													  width="250" minWidth="250"
+													  dataField="sno" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('SC_SERIAL_NO')}"/>
+	
+										<s:GridColumn id="destFilePath3"
+													  width="450" minWidth="450"
+													  dataField="destFilePath" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('SC_FILENAME')}"/>
+										
+										<s:GridColumn id="empName3"
+													  width="120" minWidth="120"
+													  dataField="empName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('SC_EMP_NAME')}"/>
+										
+										<s:GridColumn id="orgName3"
+													  width="150" minWidth="150"
+													  dataField="orgName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('SC_DEPT_NAME')}"/>
+										
+										<s:GridColumn id="fileSize3"
+													  width="100" minWidth="100"
+													  dataField="fileSize" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('D4_AGNTMA_FILESIZE')}"/>
+										
+										<s:GridColumn id="detectDate3"
+													  width="150" minWidth="150"
+													  dataField="detectDate" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('SC_DETECTDATE_TO_PC')}"/>
+										
+										<s:GridColumn id="regDate3"
+													  dataField="regDate" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+													  headerText="{DmosFramework.getInstance().SNL('SC_DETECTDATE_TO_SERVER')}"/>
+										
+									</s:ArrayList>
+									
+								</common:columns>
+								
+							</common:DragGrid>
+							
+						</s:VGroup>
+						
+					</s:NavigatorContent>
+					
+					<!--업데이트 이력-->
+					<s:NavigatorContent id="updateHistoryTab" label="{DmosFramework.getInstance().SNL('SC_UPDATE_HISTORY')}">
+						
+						<s:VGroup width="100%" height="100%">
+							
+							<s:DataGrid id="updateHistoryDG" dataTipFunction="dataTipFunc"
+										width="100%" height="100%" showDataTips="true"
+										minHeight="80">
+								
+								<s:columns>
+									
+									<s:ArrayList>
+										
+										<!--업데이트 시간-->
+										<s:GridColumn id="updateDate"
+													  width="150"
+													  minWidth="150"
+													  dataField="updateDate" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+													  headerText="{DmosFramework.getInstance().SNL('SC_UPDATE_DATE')}"/>
+										
+										<!--업데이트 대상-->
+										<s:GridColumn id="updateTarget"
+													  width="120"
+													  minWidth="120"
+													  labelFunction="labelFunction"
+													  dataField="updateTarget" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+													  headerText="{DmosFramework.getInstance().SNL('SC_TARGET_UPDATE')}"/>
+										
+										<!--업데이트 버전-->
+										<s:GridColumn id="updateVersion"
+													  dataField="isoVersion"  itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+													  headerText="{DmosFramework.getInstance().SNL('SC_ISO_VERSION')}"/>
+										
+									</s:ArrayList>
+									
+								</s:columns>
+								
+							</s:DataGrid>
+							
+						</s:VGroup>
+						
+					</s:NavigatorContent>
+					
+				</mx:TabNavigator>
+
+			</mx:DividedBox>
+
+		</s:Panel>
+
+	</mx:DividedBox>
+	
+	<!-- 파일 Export 타입 팝업 -->
+	<s:PopUpAnchor id="fileExportPop" popUpPosition="topLeft">
+		
+		<components:FileExportWindow id="fileExportWindow"/>
+		
+	</s:PopUpAnchor>
+	
+	<s:PopUpAnchor id="popEmergencyKeyWindow"
+				   popUpPosition="center" width="500">
+		
+		<components:EmergenyToolPopup id="emergencyKeyWindow"/>
+		
+	</s:PopUpAnchor>
+	
+	<!-- 전체 부서명 툴팁  -->
+	<s:PopUpAnchor id="FullDeptNamePop" popUpPosition="topLeft">
+		
+		<common:SZToolTipFullDeptName id="tooltipFullDeptName"/>
+		
+	</s:PopUpAnchor>
+	
+	<!-- 추가하기 팝업 -->
+	<s:PopUpAnchor id="addPop" popUpPosition="topLeft">
+		
+		<components:AddWindow id="addWindow"/>
+		
+	</s:PopUpAnchor>
+	
+</s:Application>

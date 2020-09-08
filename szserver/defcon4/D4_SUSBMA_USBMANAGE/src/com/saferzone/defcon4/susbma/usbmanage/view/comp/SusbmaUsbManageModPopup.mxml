@@ -1,0 +1,395 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   creationComplete="onCreateCompleteHandler()"
+			   title="{DmosFramework.getInstance().SNL('SC_MODIFY_PROPERTY')}" controlBarVisible="true" xmlns:common="http://defcon4.saferzone.com/common">
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.Icons;
+			import com.saferzone.defcon4.common.components.Widget.Connect.Applicationfacade;
+			import com.saferzone.defcon4.common.consts.CustomerId;
+			import com.saferzone.defcon4.common.events.DeptSearchPopupEvent;
+			import com.saferzone.defcon4.services.vo.SYSBaseOrgVO;
+			import com.saferzone.defcon4.susbma.usbmanage.ApplicationFacade;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.Application;
+			import mx.events.CalendarLayoutChangeEvent;
+			import mx.events.CloseEvent;
+			
+			import org.puremvc.as3.multicore.patterns.facade.Facade;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable] public var SaferZoneVersion:int= int(DmosFramework.getInstance().CONFIG("SAFERZONE_VERSION"));
+			[Bindable] public var AutoMngCode:int= int(DmosFramework.getInstance().CONFIG("USB_AUTOMNGCODE"));
+			[Bindable] public var agentlessMngWebConfig:Boolean = DmosFramework.getInstance().CONFIG("AGENTLESS_MNGWEB_USE")=="1"?true:false;
+			
+			[Bindable]
+			public var deptTypeArr:ArrayCollection = new ArrayCollection([
+				{isDeptType:0, labelName:DmosFramework.getInstance().SNL('SC_PUBLIC')},
+				{isDeptType:1, labelName:DmosFramework.getInstance().SNL('SC_ISONLYDEPT')},
+				{isDeptType:2, labelName:DmosFramework.getInstance().SNL('SC_INDI')}
+			]);
+			
+			[Bindable]
+			public var deptArr:ArrayCollection = new ArrayCollection();
+			
+			private function onCreateCompleteHandler():void
+			{
+				this.manageNo.setFocus();
+				
+				var capacityBool:Boolean = DmosFramework.getInstance().CONFIG("USB_VISIBLE_CAPACITY")=="1"?true:false; // 용량 - 0안보임/1보임
+				capacityForm.visible = capacityBool;
+				capacityForm.includeInLayout = capacityBool;
+				
+				if(agentlessMngWebConfig)
+				{
+					isDeptTypeForm.visible = isDeptTypeForm.includeInLayout = false;
+				}
+				
+				/**
+				 * usb 추가 시 사용자를 관리책임자로 사용할지 판단. 기본적으로 false로 관리책임자와 사용자는 입력창이 다르게 세팅 
+				 * */
+				var bUserIdEqaulMngId:Boolean = false;
+				
+				if(!bUserIdEqaulMngId){
+					isNhicDeptType.visible          = false;
+				}else{
+//					isDeptTypeForm.visible			= false;
+//					isDeptTypeForm.includeInLayout	= false;
+					managerSearchBtn.enabled        = false;	
+				}
+				
+				var isTimeCheckBool:Boolean = DmosFramework.getInstance().CONFIG("USB_USE_PERIOD")=="1"?true:false; // 용량 - 0안보임/1보임
+				if(!isTimeCheckBool)
+				{
+					isTimeCheckForm.visible = isTimeCheckForm.includeInLayout = false;
+				}
+				
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.GS){
+					capacityForm.visible = capacityForm.includeInLayout = false;
+					isDeptTypeForm.visible = isDeptTypeForm.includeInLayout = false;
+				}
+			}
+			protected function isDeptType_clickHandler(event:MouseEvent):void
+			{
+				if(isNhicDeptType.selected)
+				{
+					userNameForm.label = DmosFramework.getInstance().SNL('SC_DEPT');
+				}else{					
+					userNameForm.label = DmosFramework.getInstance().SNL('SC_USER');
+				}
+				userName.text = "";
+				
+			}	
+			
+			protected function permStartDate_changeHandler(event:CalendarLayoutChangeEvent):void
+			{
+//				permEndDate.selectableRange = {rangeStart:permStartDate.selectedDate};
+			}
+			
+			protected function permEndDate_changeHandler(event:CalendarLayoutChangeEvent):void
+			{
+//				permStartDate.selectableRange = {rangeEnd:permEndDate.selectedDate};
+			}
+			
+			protected function isTimeCheck_clickHandler(event:MouseEvent):void
+			{
+				if(isTimeCheck.selected)
+				{
+					permStartDate.text ="";
+					permEndDate.text = "";
+				}
+			}
+			
+			protected function reason_changeHandler(event:IndexChangeEvent):void
+			{
+				// TODO Auto-generated method stub
+//				if((reason.selectedIndex + 1) == reason.dataProvider.length)
+//				{
+//					reasonForm.visible = reasonForm.includeInLayout = true;
+//					reasonInput.visible = reasonInput.includeInLayout = true;
+//				}else{
+//					reasonForm.visible = reasonForm.includeInLayout = false;
+//					reasonInput.visible = reasonInput.includeInLayout = false;
+//				}
+			}
+			
+			protected function browseDeptButton_clickHandler(event:MouseEvent):void
+			{
+				deptSearchAnchor.x = this.width + 20;
+				deptSearchAnchor.displayPopUp = true;
+				this.deptSearchPopup.deptNavigator.searchInput.setFocus();
+			}
+			
+			protected function browseDeptDelButton_clickHandler(event:MouseEvent):void
+			{
+//				deptDG.removeChildAt(this.deptDG.selectedIndex);
+				deptDG.dataProvider.removeItemAt(this.deptDG.selectedIndex);
+			}
+			
+			protected function deptSearchPopup_closeHandler(event:CloseEvent):void
+			{
+				deptSearchAnchor.displayPopUp = false;
+			}
+			
+			protected function deptSearchPopup_confirmHandler(event:DeptSearchPopupEvent):void
+			{
+				var selectedDept:SYSBaseOrgVO = event.selectedDept as SYSBaseOrgVO;
+				var obj:Object = new Object();
+				obj.orgName = selectedDept.orgName;
+				obj.orgId = selectedDept.orgId;
+				obj.includeSubDept = int(deptSearchPopup.includeSubDept);
+				if(duplicationData(obj.orgId)){
+					deptDG.dataProvider.addItem(obj);
+					deptDG.enabled = true;
+				}else{
+					Alert.show(DmosFramework.getInstance().SNL('SC_DUPLICATE_DEPT'), DmosFramework.getInstance().SNL('PROGRAMTITLE_D4_SUSBMA_USBMANAGE'));
+				}
+			}
+			
+			private function duplicationData(userOrgId:String):Boolean 
+			{
+				var bool:Boolean = true;
+				
+				for (var i:int = 0; i < this.deptArr.length; i++) 
+				{
+					if(this.deptArr[i].userOrgId == userOrgId){
+						bool = false;
+					}
+				}
+				return bool;
+			}
+			
+			private function labelFunction(item:Object, column:GridColumn):String
+			{
+				var label:String = "";
+				if(column.dataField == "includeSubDept")
+				{
+					if(int(item["includeSubDept"]) == 0){
+						label = "X";
+					}else if(int(item["includeSubDept"]) == 1){
+						label = "O";
+					}
+				}
+				return label; 
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:RadioButtonGroup id="groupType"/>
+	</fx:Declarations>
+	<s:Form>
+
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_REASON_FOR_CHANGE')}"
+					visible="false" includeInLayout="false">
+			<s:DropDownList id="reason" labelField="reasonName" width="200"/>
+		</s:FormItem>
+		
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_REASON_FOR_CHANGE')}"
+					>
+			<s:TextInput id="reasonChange" width="200"/>
+		</s:FormItem>
+		
+		<!-- 등급 -->
+		<s:FormItem width="100%"
+					id="gradeForm"
+					label="{DmosFramework.getInstance().SNL('SC_CLASS')}">
+			<s:DropDownList id="grade" labelField="className" width="200"/>
+		</s:FormItem>
+		
+		<!-- 상태 -->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_STATE')}"
+					visible="false" includeInLayout="false">
+			<s:HGroup verticalAlign="middle">
+				<common:SZTextmxInput id="stateStr" editable="false" width="80" restrict="^'"/>
+				<s:Label text="-->"/>
+				<s:DropDownList id="state" labelField="stateName" width="80" />
+			</s:HGroup>
+		</s:FormItem>
+		
+		<!-- 관리번호 -->
+		<s:FormItem width="100%"
+					id="manageNoForm"
+					label="{DmosFramework.getInstance().SNL('SC_MANAGE_NO')}" >
+			<s:HGroup>
+				<common:SZTextmxInput id="manageNo" width="200" restrict="^'" editable="false" enabled="{AutoMngCode==0?true:false}"/>
+				<s:Button id="manageNoSearchBtn" label="{DmosFramework.getInstance().SNL('SC_SEARCH')}" styleName="s_Button_Search" visible="{AutoMngCode==0?true:false}" includeInLayout="{AutoMngCode==0?true:false}"/>
+			</s:HGroup>
+		</s:FormItem>
+		
+		<!-- 관리책임자 -->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_MANAGER')}">
+			<s:HGroup>
+				<common:SZTextmxInput id="managerId" visible="false" includeInLayout="false" restrict="^'"/>
+				<common:SZTextmxInput id="managerName" editable="false" width="200" restrict="^'"/>
+				<s:Button id="managerSearchBtn" label="{DmosFramework.getInstance().SNL('SC_SEARCH')}" styleName="s_Button_Search"/>
+			</s:HGroup>
+		</s:FormItem>
+		
+		<!-- 사용자 -->
+		<s:FormItem width="100%"
+					id="userNameForm"
+					label="{DmosFramework.getInstance().SNL('SC_USER')}">
+			<s:HGroup>
+				<common:SZTextInput id="userId" visible="false" includeInLayout="false" restrict="^'"/>
+				<common:SZTextInput id="userName" editable="false" width="200" restrict="^'"/>
+				<s:Button id="userSearchBtn" label="{DmosFramework.getInstance().SNL('SC_SEARCH')}" styleName="s_Button_Search"/>
+				<s:CheckBox id="isNhicDeptType"
+							click="isDeptType_clickHandler(event)"
+							label="{DmosFramework.getInstance().SNL('SC_DEPT_TYPE')}"
+							/>
+			</s:HGroup>
+		</s:FormItem>
+		
+		<!-- 매체종류 -->
+		<s:FormItem width="100%"
+					id="mediaForm" visible="false" includeInLayout="false"
+					label="{DmosFramework.getInstance().SNL('SC_MEDIATYPE')}">
+			<s:DropDownList id="media" labelField="mediaName" width="200" />
+		</s:FormItem>
+		
+		<!-- 용량 -->
+		<s:FormItem width="100%" id="capacityForm"
+					label="{DmosFramework.getInstance().SNL('SC_CAPACITY')}" visible="{(media.selectedItem.mediaId==1?false:true) || DmosFramework.getInstance().CUSTOMERID==CustomerId.GS?false:true}" includeInLayout="{(media.selectedItem.mediaId==1?false:true) || DmosFramework.getInstance().CUSTOMERID==CustomerId.GS?false:true}">
+			<s:HGroup verticalAlign="bottom">
+				<common:SZTextmxInput id="volume" textAlign="right" restrict="^'" maxChars="9"/>
+				<s:Label text="GB"/>
+			</s:HGroup>
+		</s:FormItem>
+		
+		<!-- 사용기간 -->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_DEPT')}"
+					visible="false" includeInLayout="false">
+			<s:CheckBox id="usePeriod" label="{DmosFramework.getInstance().SNL('SC_CHECK_PERIOD')}"/>
+			<s:HGroup>
+				<mx:DateField id="useTermBegin" enabled="{usePeriod.selected}" formatString="YYYY-MM-DD"/>
+				<mx:DateField id="useTermEnd" enabled="{usePeriod.selected}" formatString="YYYY-MM-DD"/>
+			</s:HGroup>
+		</s:FormItem>
+		
+		<!-- 사용기간 -->
+		<s:FormItem width="100%" id="isTimeCheckForm"
+					label="{DmosFramework.getInstance().SNL('SC_PERIOD')}" required="true">
+			<s:VGroup>
+				<s:HGroup verticalAlign="bottom">				
+					<s:CheckBox id="isTimeCheck" label="{DmosFramework.getInstance().SNL('SC_SAHRE_UNLIMITED')}" />
+				</s:HGroup>
+				<s:HGroup verticalAlign="bottom" id="permDateForm" enabled="{!isTimeCheck.selected}"> 
+					<mx:DateField id="permStartDate"
+								  yearNavigationEnabled="true"
+								  change="permStartDate_changeHandler(event)"
+								  formatString="YYYY-MM-DD"/>
+					
+					<mx:DateField id="permEndDate"
+								  yearNavigationEnabled="true"
+								  change="permEndDate_changeHandler(event)"
+								  formatString="YYYY-MM-DD"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:FormItem>
+		
+		<!-- 부서용 -->
+		<s:FormItem width="100%" id="isDeptTypeForm"
+					label="{DmosFramework.getInstance().SNL('SC_DEPT_TYPE')}" required="true">
+			<s:HGroup verticalAlign="bottom">				
+				<!--
+				<s:CheckBox id="isDeptType"
+				label="{DmosFramework.getInstance().SNL('SC_SET')}"
+				/>
+				-->
+				<s:DropDownList id="isDeptType" dataProvider="{deptTypeArr}" labelField="labelName" width="130" selectedIndex="0" />
+			</s:HGroup>
+		</s:FormItem>
+		
+		<s:Spacer height="4" />
+		
+		<s:HGroup width="100%" verticalAlign="middle"
+				  visible="{this.isDeptType.selectedIndex == 1}"
+				  includeInLayout="{this.isDeptType.selectedIndex == 1}"
+				  >
+			
+			<common:SubTitleLabel text="{DmosFramework.getInstance().SNL('SC_DEPT') + DmosFramework.getInstance().SNL('PROGRAMTITLE_D4_FILEMA_RELEASE')}" />
+			
+			<s:Spacer width="100%" />
+			<s:Button id="addBtn"
+					  icon="{Icons.ICON_ADD_16}"
+					  skinClass="com.saferzone.defcon4.common.skins.ToolBarButtonSkin"
+					  click="browseDeptButton_clickHandler(event)"
+					  label="추가"
+					  />
+			
+			<s:Button id="delBtn"
+					  icon="{Icons.ICON_DELETE_16}"
+					  skinClass="com.saferzone.defcon4.common.skins.ToolBarButtonSkin"
+					  click="browseDeptDelButton_clickHandler(event)"
+					  label="삭제"
+					  />
+		</s:HGroup>
+		
+		<common:DragGrid id="deptDG" textAlign="center"
+						 width="100%" height="100%" showDataTips="true" enabled="{Boolean(deptArr.length != 0)}"
+						 visible="{this.isDeptType.selectedIndex == 1}"
+						 includeInLayout="{this.isDeptType.selectedIndex == 1}"
+						 dataProvider="{deptArr}"
+						 minHeight="80">
+			
+			<common:columns>
+				
+				<s:ArrayList>
+					
+					<!--시리얼번호 -->
+					<s:GridColumn id="orgName"
+								  width="120" minWidth="120"
+								  dataField="orgName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+								  headerText="{DmosFramework.getInstance().SNL('D4_DIM_REGORGNAME')}"/>
+					
+					<s:GridColumn id="orgId"
+								  width="170" minWidth="170"
+								  dataField="orgId" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+								  headerText="{DmosFramework.getInstance().SNL('SC_DEPT_CODE')}"/>
+					
+					<s:GridColumn id="includeSubDept"
+								  width="70" minWidth="70" labelFunction="labelFunction"
+								  dataField="includeSubDept" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" 
+								  headerText="{DmosFramework.getInstance().SNL('FILEMA_SUB_DEPT')}"/>
+					
+				</s:ArrayList>
+				
+			</common:columns>
+			
+		</common:DragGrid>
+		
+		<s:PopUpAnchor id="deptSearchAnchor"
+					   includeInLayout="false">
+			
+			<common:DeptSearchPopup id="deptSearchPopup"
+									close="deptSearchPopup_closeHandler(event)"
+									confirm="deptSearchPopup_confirmHandler(event)"
+									/>
+			
+		</s:PopUpAnchor>
+		
+	</s:Form>
+	<s:controlBarLayout>
+		<s:HorizontalLayout horizontalAlign="center"/>
+	</s:controlBarLayout>
+	<s:controlBarContent>
+		<common:SZButton id="okBtn"
+				  label="{DmosFramework.getInstance().SNL('SC_OK')}"
+				  />
+		
+		<common:SZButton id="cancelBtn"
+				  label="{DmosFramework.getInstance().SNL('SC_CANCEL')}"
+				  />
+	</s:controlBarContent>
+</s:TitleWindow>

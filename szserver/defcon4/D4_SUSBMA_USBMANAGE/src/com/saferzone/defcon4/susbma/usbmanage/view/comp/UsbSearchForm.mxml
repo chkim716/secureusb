@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:vo="com.saferzone.defcon4.services.vo.*"
+			   
+			   initialize="initializeHandler(event)"
+			   remove="removeHandler(event)"
+			   controlBarVisible="true"
+			   implements="mx.rpc.IResponder"
+			   title="{DmosFramework.getInstance().SNL('SC_SEARCH_USB')}" xmlns:ns="http://defcon4.saferzone.com/common">
+	
+	<fx:Declarations>
+		
+		<vo:CommonUiSearchVO id="commonUiSearchVO"/>
+		
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.consts.GlobalConst;
+			
+			import mx.collections.IList;
+			import mx.controls.Alert;
+			import mx.events.CalendarLayoutChangeEvent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			import mx.utils.ObjectUtil;
+			import mx.validators.Validator;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import com.saferzone.defcon4.common.utils.SZUtil;
+			
+			//------------------------------------------------------------------------------
+			//
+			// Constants 
+			//
+			//------------------------------------------------------------------------------
+			
+			public static const SEARCH:int = 1;
+			
+			
+			//------------------------------------------------------------------------------
+			//
+			// Properties #private 
+			//
+			//------------------------------------------------------------------------------
+			
+			[Bindable]
+			private var classNameDataProvider:IList;
+			
+			[Bindable]
+			private var mediaNameDataProvider:IList;
+			
+			[Bindable]
+			private var stateNameDataProvider:IList;
+			
+			private var susbmaCommonRemote:RemoteObject;
+			
+			//------------------------------------------------------------------------------
+			//
+			// Methods 
+			//
+			//------------------------------------------------------------------------------
+			
+			//--------------------------------------
+			// Event Handlers 
+			//--------------------------------------
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+			}
+			
+			protected function removeHandler(event:FlexEvent):void
+			{
+			}
+			
+			protected function searchButton_clickHandler(event:MouseEvent):void
+			{
+				var arInvalid:Array = Validator.validateAll(
+					[
+						snoInputValidator
+					]
+				);
+				
+				if(arInvalid.length>0)
+				{
+					return;
+				}
+				
+				dispatchEvent(new CloseEvent(CloseEvent.CLOSE, false, false, SEARCH));
+			}
+			
+			//--------------------------------------
+			// public 
+			//--------------------------------------
+			
+			/**
+			 * mx.rpc.IResponder
+			 */
+			public function result(data:Object):void
+			{
+			}
+			
+			/**
+			 * mx.rpc.IResponder
+			 */
+			public function fault(info:Object):void
+			{
+				var faultEvent:FaultEvent = info as FaultEvent;
+				if(faultEvent)
+				{
+					var rootCause:Object = faultEvent.fault.rootCause;
+					var text:String = rootCause ? rootCause.message : faultEvent.message.toString();
+					Alert.show(text, DmosFramework.getInstance().SNL("SC_ALERT_ERROR"));
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		
+		<ns:SZStringValidator id="snoInputValidator" 
+							  source="{snoInput}" 
+							  property="text" 
+							  field="{SZStringValidator.SNO}"
+							  />
+		
+	</fx:Declarations>
+	
+	
+	<s:Form width="100%">
+		
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_SERIAL_NO')}">
+			
+			<s:TextInput id="snoInput"
+						 width="100%"
+						 text="@{commonUiSearchVO.sno}" restrict="^'"/>
+			
+		</s:FormItem>
+		
+	</s:Form>
+	
+	<s:controlBarLayout>
+		
+		<s:HorizontalLayout horizontalAlign="center"
+							gap="10"/>
+		
+	</s:controlBarLayout>
+	
+	<s:controlBarContent>
+		
+		<ns:SZButton id="searchButton"
+					 label="{DmosFramework.getInstance().SNL('SC_SEARCH')}"
+					 click="searchButton_clickHandler(event)"/>
+		
+	</s:controlBarContent>
+	
+</s:TitleWindow>

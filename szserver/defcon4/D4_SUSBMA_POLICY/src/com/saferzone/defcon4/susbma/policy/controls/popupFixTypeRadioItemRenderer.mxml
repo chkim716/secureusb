@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+					xmlns:s="library://ns.adobe.com/flex/spark"
+					xmlns:mx="library://ns.adobe.com/flex/mx"
+					clipAndEnableScrolling="true">
+	<fx:Declarations>
+		<s:RadioButtonGroup id="popupFixTypeGroup" />
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			
+			override public function set data(value:Object):void
+			{
+				super.data = value;
+				
+				if(!value)
+					return;
+				
+				if(data[column.dataField] == 0)
+				{
+					duration.selected = true;
+				}
+				else
+				{
+					fix.selected = true;
+				}
+						
+			}
+			
+			public function fix_changeHandler(event:Event):void
+			{
+				if(fix.selected)
+				{
+					data[column.dataField] = 1;
+				}
+				else
+				{
+					data[column.dataField] = 0;
+				}
+			}
+			
+			public function duration_changeHandler(event:Event):void
+			{
+				if(duration.selected)
+				{
+					data[column.dataField] = 0;
+				}
+				else
+				{
+					data[column.dataField] = 1;
+				}
+			}
+			
+		]]>
+	</fx:Script>			
+	
+	<s:HGroup width="100%" height="100%" verticalAlign="middle" horizontalAlign="center">
+	
+		<s:RadioButton id="fix" label="{DmosFramework.getInstance().SNL('SC_FIXED')}"
+					   groupName="popupFixTypeGroup" change="fix_changeHandler(event)"/>
+		
+		<s:RadioButton id="duration" label="{DmosFramework.getInstance().SNL('SC_DURATION_USE')}"
+					   groupName="popupFixTypeGroup" change="duration_changeHandler(event)"/>
+		
+	</s:HGroup>
+</s:GridItemRenderer>

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx" title="{DmosFramework.getInstance().SNL('SC_EMERGENCY_TOOL_MANAGEMENT')}"
+			   xmlns:common="http://defcon4.saferzone.com/common"
+			   creationComplete="creationCompleteHandler(event)" width="300">
+		
+	
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			
+			import flash.sampler.getInvocationCount;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.TextOperationEvent;
+			
+			
+			//------------------------------------------------------------------------------
+			//
+			// creationCompleteHandler
+			//
+			//------------------------------------------------------------------------------
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+
+			}
+			//------------------------------------------------------------------------------
+			//
+			// Properties #public 
+			//
+			//------------------------------------------------------------------------------
+			
+			public function get authCode():String
+			{
+				return StringUtil.trim(authCodeInput.text);
+			}
+			
+			//------------------------------------------------------------------------------
+			//
+			// Properties #private 
+			//
+			//------------------------------------------------------------------------------
+			[Bindable]
+			private var isConnectedProvider:ArrayCollection =
+				new ArrayCollection([
+					{label:DmosFramework.getInstance().SNL("SC_EMERGENCY_KEY_TAKEOUT"),  value:2 }
+					
+				]);
+			
+			//			{label:DmosFramework.getInstance().SNL("SC_PRIVACY_FILESTATE_DECRYPT"), value:0},
+			//			{label:DmosFramework.getInstance().SNL("SC_EMERGENCY_KEY_NETWORKBAN"),  value:2 }	
+			
+			[Bindable] 
+			private var isKeyAvailable:Boolean = false;
+			
+			//------------------------------------------------------------------------------
+			//
+			// Methods 
+			//
+			//------------------------------------------------------------------------------
+			
+			//--------------------------------------
+			// Event Handlers 
+			//--------------------------------------
+			
+			protected function authCodeInput_changeHandler(event:TextOperationEvent):void
+			{
+				if(authCodeInput.text.length > 0 && txtReason.text.length > 0){
+					isKeyAvailable = true;
+				}else{
+					isKeyAvailable = false;
+				}
+			}
+			
+			protected function clickHandler(event:MouseEvent):void
+			{
+				dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+			}
+			
+			protected function txtReason_changeHandler(event:TextOperationEvent):void
+			{
+				if(authCodeInput.text.length > 0 && txtReason.text.length > 0){
+					isKeyAvailable = true;
+				}else{
+					isKeyAvailable = false;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<common:SZStringValidator id="txtReasonValidator" 
+								  source="{txtReason}" 
+								  property="text" 
+								  field="{SZStringValidator.EMPNAME}"
+								  />
+	</fx:Declarations>
+	<s:layout>
+		
+		<s:VerticalLayout gap="10"/>
+		
+	</s:layout>
+	
+	<s:Form width="100%" height="100%">
+		
+		<s:FormItem id="authCodeInputForm"
+					width="100%" height="30"
+					label="{DmosFramework.getInstance().SNL('SC_REQUEST_CODE')}">
+			
+			<common:SZTextmxInput id="authCodeInput"
+								  width="100%" height="100%"
+								  change="authCodeInput_changeHandler(event)"/>
+			
+		</s:FormItem>
+		
+		<s:FormItem id="selectKeyTypeForm"
+					width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_TYPE')}">
+			
+			<s:DropDownList id="ddrKeyType"
+							dataProvider="{isConnectedProvider}"
+							selectedIndex="0"
+							width="100%"/>
+			
+		</s:FormItem>
+		
+		<s:FormItem id="reasonForm"
+					width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_REASON')}">
+			
+			<common:SZTextmxInput id="txtReason" restrict="^'"
+								  width="100%" height="100%" change="txtReason_changeHandler(event)"
+								  maxChars="50"/>
+			
+		</s:FormItem>
+		
+		<s:FormItem id="emergencyKeyLabelForm"
+					width="100%" height="30"
+					label="{DmosFramework.getInstance().SNL('SC_AGNTMA_EMERGENCYKEY')}">
+			
+			<common:SZTextmxInput id="emergencyKeyLabel"
+								  contentBackgroundAlpha="0" enabled="true" 
+								  editable="false"  borderVisible="false"
+								  width="100%" height="100%"/>
+			
+			<!--	
+			<s:Label id="emergencyKeyLabel"
+			width="100%" height="100%"
+			verticalAlign="middle"/>
+			-->
+			
+		</s:FormItem>
+		
+
+	</s:Form>
+	
+	<s:controlBarLayout>
+		
+		<s:HorizontalLayout horizontalAlign="center"
+							verticalAlign="middle"
+							gap="5"/>
+		
+	</s:controlBarLayout>
+	
+	<s:controlBarContent>
+		
+		<common:SZButton id="createButton"
+						 enabled="{isKeyAvailable}"
+						 label="{DmosFramework.getInstance().SNL('SC_CREATE')}"/>
+		
+		<common:SZButton id="cancelButton"
+						 label="{DmosFramework.getInstance().SNL('SC_CANCEL')}"
+						 click="clickHandler(event)"/>
+		
+	</s:controlBarContent>
+	
+</s:TitleWindow>

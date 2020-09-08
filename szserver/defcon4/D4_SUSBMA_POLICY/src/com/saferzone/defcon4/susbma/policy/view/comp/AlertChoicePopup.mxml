@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:common="http://defcon4.saferzone.com/common"
+			   controlBarVisible="true"
+			   height="500"
+			   title="{DmosFramework.getInstance().SNL('SC_POPUP_USE_CHOICE')}">
+
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.services.vo.SusbmaCommonPolicyMasterVO;
+			
+			import mx.collections.ArrayCollection;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridEvent;
+			
+			[Bindable]public var popupArr:ArrayCollection = new ArrayCollection();
+			
+			private static function fnDataTip(item:Object, column:GridColumn):String
+			{				
+				var toolTip:String = item.popupContentDetail;
+				
+				return toolTip;
+			}
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+
+		<s:VerticalLayout gap="10"/>
+
+	</s:layout>
+
+	<common:DragGrid id="popupDG" dataProvider="{popupArr}"
+					 width="100%" height="95%" 
+					 dataTipFunction="fnDataTip"
+					 showDataTips="true">
+		<common:columns>
+			<s:ArrayList>
+				
+				<!--checkbox-->
+				<s:GridColumn maxWidth="30"
+							  dataField="checked"
+							  headerRenderer="com.saferzone.defcon4.common.components.renderers.CheckHeaderRenderer"
+							  headerText=""
+							  itemRenderer="com.saferzone.defcon4.common.components.renderers.CheckItemRenderer"
+							  resizable="false"
+							  sortable="false"/>
+				
+				<!--popupId-->
+				<s:GridColumn id="popupId"
+							  dataField="popupId"
+							  visible="false"
+							  headerText=""/>
+				
+				<!--알림 내용-->
+				<s:GridColumn id="popupContent"
+							  width="300"
+							  dataField="popupContent"
+							  headerText="{DmosFramework.getInstance().SNL('SC_POPUP_CONTENT')}"/>
+				
+				<!--popupContentDetail-->
+				<s:GridColumn id="popupContentDetail"
+							  dataField="popupContentDetail"
+							  visible="false"
+							  headerText=""/>
+				
+				<!--고정 여부-->
+				<s:GridColumn id="popupFix"
+							  width="200"
+							  dataField="popupFix"
+							  headerText="{DmosFramework.getInstance().SNL('SC_POPUP_FIXTYPE')}"
+							  itemRenderer="com.saferzone.defcon4.susbma.policy.controls.popupFixTypeRadioItemRenderer"/>
+				
+			</s:ArrayList>
+		</common:columns>
+	</common:DragGrid>
+	
+
+	<s:controlBarLayout>
+
+		<s:HorizontalLayout horizontalAlign="center"
+							verticalAlign="middle"
+							gap="5"/>
+
+	</s:controlBarLayout>
+
+	<s:controlBarContent>
+
+		<common:SZButton id="confirmButton"
+				  label="{DmosFramework.getInstance().SNL('SC_OK')}"/>
+
+		<common:SZButton id="cancelButton"
+				  label="{DmosFramework.getInstance().SNL('SC_CANCEL')}"/>
+
+	</s:controlBarContent>
+	
+</s:TitleWindow>

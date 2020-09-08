@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   creationComplete="onCreateCompleteHandler()"
+			   title="{DmosFramework.getInstance().SNL('SC_DISUSE')}" controlBarVisible="true" xmlns:common="http://defcon4.saferzone.com/common">
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.Icons;
+			import com.saferzone.defcon4.common.consts.CustomerId;
+			
+			import mx.controls.TextArea;
+			
+			import spark.events.TextOperationEvent;
+			
+			private function onCreateCompleteHandler():void
+			{
+				var CC:Boolean;
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.CC_V5)
+				{
+					deleteDataGrp.visible=false;
+					deleteDataGrp.includeInLayout=false;
+					
+					blockedToUseGrp.visible=false;
+					blockedToUseGrp.includeInLayout=false;
+				}
+				
+				this.lose.setFocus();
+			}
+			
+			protected function message_clickHandler(event:MouseEvent):void
+			{
+				if(!message.selected)
+				{
+					messageStr.text = "";
+					charCount.text = "0";
+				}
+			}
+			
+			private function replaceAll( source:String, find:String, replacement:String ):String
+			{
+				return source.split( find ).join( replacement );
+			}
+			
+			protected function messageStr_changeHandler(event:Event, messageStr:TextArea):void
+			{
+				var message:String = messageStr.text;
+				
+//				if(String(messageStr.text).toString().indexOf("'") > -1){
+//					message = replaceAll(message,"'","");
+//				}
+//				if(String(message).toString().indexOf(">") > -1){
+//					message = replaceAll(message,">","");
+//				}
+//				if(String(message).toString().indexOf("<") > -1){
+//					message = replaceAll(message,"<","");
+//				}
+//				if(String(message).toString().indexOf("/") > -1){
+//					message = replaceAll(message,"/","");
+//				}
+//				if(String(message).toString().indexOf("\\") > -1){
+//					message = replaceAll(message,"\\","");
+//				}
+//				if(String(message).toString().indexOf("]") > -1){
+//					message = replaceAll(message,"]","");
+//				}
+//				if(String(message).toString().indexOf("[") > -1){
+//					message = replaceAll(message,"[","");
+//				}
+//				if(String(message).toString().indexOf(";") > -1){
+//					message = replaceAll(message,";","");
+//				}
+//				if(String(message).toString().indexOf("`") > -1){
+//					message = replaceAll(message,"`","");
+//				}
+//				if(String(message).toString().indexOf("&") > -1){
+//					message = replaceAll(message,"&","");
+//				}
+//				if(String(message).toString().indexOf("-") > -1){
+//					message = replaceAll(message,"-","");
+//				}
+//				if(String(message).toString().indexOf("^") > -1){
+//					message = replaceAll(message,"^","");
+//				}
+				
+//				messageStr.text = message;
+				charCount.text = String(messageStr.text.length);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:RadioButtonGroup id="unUseType"/>
+		
+		<common:SZStringValidator id="unUseDescValidator" 
+								  source="{txtUnUseDesc}" 
+								  property="text" 
+								  field="{SZStringValidator.REASONDESC}"
+								  required="true"
+								  />
+	</fx:Declarations>
+	<s:VGroup>
+		<s:Form>
+			<!-- AssetId/InVisible -->
+			<s:FormItem width="100%" visible="false" includeInLayout="false">
+				<common:SZTextmxInput id="txtAssetId" width="200" maxChars="50"/>
+			</s:FormItem>
+			<!-- PcOrgId/InVisible -->
+			<s:FormItem width="100%" visible="false" includeInLayout="false">
+				<common:SZTextmxInput id="txtPcOrgId" width="200" maxChars="50"/>
+			</s:FormItem>
+			<!-- 불용처리여부 -->
+			<s:FormItem width="100%"
+						label="{DmosFramework.getInstance().SNL('SC_DISUSE')}">
+				<s:HGroup>
+					<!--정상-->
+					<s:RadioButton id="normal"
+								   label="{DmosFramework.getInstance().SNL('D4_SUSBMA_SYSCOMMON_STATENAME_NORMAL')}"
+								   groupName="unUseType"/>
+					<!--분실-->
+					<s:RadioButton id="lose"
+								   label="{DmosFramework.getInstance().SNL('SC_LOST')}"
+								   selected="true" groupName="unUseType"/>
+					<!--파기-->
+					<s:RadioButton id="destroy"
+								   label="{DmosFramework.getInstance().SNL('SC_DESTROY')}"
+								   groupName="unUseType"/>
+				</s:HGroup>
+			</s:FormItem>
+			<!-- 불용처리사유 -->
+			<s:FormItem width="100%" 
+						label="{DmosFramework.getInstance().SNL('SC_DISUSE_DESC')}">
+					<common:SZTextmxInput id="txtUnUseDesc" width="200" maxChars="50"/>
+			</s:FormItem>
+			<!-- 데이터삭제여부 -->
+			<s:FormItem width="100%" id="deleteDataGrp"
+						label="{DmosFramework.getInstance().SNL('SC_DELETE_DATA')}">
+				<!--데이터삭제-->
+				<s:CheckBox id="deleteData" label="{DmosFramework.getInstance().SNL('SC_DELETE_DATA')}"/>
+			</s:FormItem>
+			
+			<!-- 사용금지여부 -->
+			<s:FormItem width="100%" id="blockedToUseGrp"
+						label="{DmosFramework.getInstance().SNL('SC_BLOCKED_TO_USE')}">
+				<s:CheckBox id="unUsed" label="{DmosFramework.getInstance().SNL('SC_BLOCKED_TO_USE')}"/>
+			</s:FormItem>
+			
+			<!-- 메세지출력여부 -->
+			<s:FormItem width="100%"
+						label="{DmosFramework.getInstance().SNL('SC_MESSAGE')}">
+				<!--메세지출력-->
+				<s:CheckBox id="message" label="{DmosFramework.getInstance().SNL('SC_MESSAGE')}" click="message_clickHandler(event)"/>
+				<!--여기에 메세지를 입력하세요.-->
+				<common:SZTextArea 
+									id="messageStr" 
+									width="100%" 
+									height="60" 
+									enabled="{message.selected}" 
+									maxChars="200" 
+									change="messageStr_changeHandler(event, messageStr)"
+				/>
+				<s:HGroup width="100%">
+					<s:Spacer width="100%"/>
+					<s:Label id="charCount" text="0"/>
+					<s:Label id="charCount1" text="/"/>
+					<s:Label id="charCount2" text="200"/>
+				</s:HGroup>
+			</s:FormItem>
+		</s:Form>
+	</s:VGroup>
+	<s:controlBarLayout>
+		<s:HorizontalLayout horizontalAlign="center"/>
+	</s:controlBarLayout>
+	<s:controlBarContent>
+		<common:SZButton id="okBtn"
+				  label="{DmosFramework.getInstance().SNL('SC_OK')}"/>
+		
+		<common:SZButton id="cancelBtn"
+				  label="{DmosFramework.getInstance().SNL('SC_CANCEL')}"/>
+	</s:controlBarContent>
+</s:TitleWindow>

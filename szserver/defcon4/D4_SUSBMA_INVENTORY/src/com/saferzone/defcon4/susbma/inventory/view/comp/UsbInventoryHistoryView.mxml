@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:common="http://defcon4.saferzone.com/common">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.Icons;
+			
+			import mx.collections.ArrayCollection;
+			//------------------------------------------------------------------------------
+			//
+			// Properties #public 
+			//
+			//------------------------------------------------------------------------------
+			/** 카운트 */
+			[Bindable]
+			public var searchResultCount:int;
+			
+			[Bindable]
+			public var historyArr:ArrayCollection;
+			
+			private function labelFunction(item:Object, column:GridColumn):String
+			{
+				var sno:String = item[column.dataField];
+				return sno.substr(sno.length-6, 6); 
+			}
+			
+			private function dataTipFunc(item:Object, column:GridColumn):String {
+				var tooltip:String = "";
+				
+				if(item != null)
+				{
+					if(column.dataField == "userOrgName")
+					{
+						tooltip = item.fullOrgName;	
+					}
+					else{
+						tooltip = item[column.dataField];
+					}
+				}
+				
+				return tooltip;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	<common:ToolBar id="toolBar" width="100%">
+		<!--이력검색 버튼--> 
+		<s:Button id="searchBtn"
+				  icon="{Icons.ICON_SEARCH_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_SEARCH')}"/>
+		
+		<!-- 엑셀저장 버튼-->
+		<s:Button id="excelBtn"
+				  icon="{Icons.ICON_EXPORT_TO_EXCEL_16}" visible="false" includeInLayout="false"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_EXPORT_TO_EXCEL')}"/>
+		
+		<!--새로고침 버튼--> 
+		<s:Button id="reloadBtn"
+				  icon="{Icons.ICON_REFRESH_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_REFRESH')}"/>
+		
+		<!--초기화 버튼--> 
+		<s:Button id="initBtn"
+				  icon="{Icons.ICON_INIT_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_RESET')}"/>
+		
+		<s:Spacer width="100%"/>
+		
+		<!--검색결과--> 
+		<s:Label id="countLabel"
+				 height="100%"
+				 verticalAlign="middle"
+				 text="{DmosFramework.getInstance().SNL('SC_SEARCH_RESULT') + searchResultCount}"/>
+		
+		<!--컬럼설정--> 
+		<common:SZColumnSettingButton id="columnSettingBtn" 
+									  dragGrid="{historyVWGrid}"
+									  parentWnd="{this}"/>
+	</common:ToolBar>
+	
+	<common:DragGrid id="historyVWGrid" width="100%" height="100%" dataProvider="{historyArr}"
+					 showDataTips="true" dataTipFunction="dataTipFunc">
+		<common:columns>
+			<s:ArrayList>
+				<!--USB번호--> 
+				<s:GridColumn id="inventorySno"
+							  width="120" minWidth="120"
+							  dataField="inventorySno" labelFunction="labelFunction" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+							  headerText="{DmosFramework.getInstance().SNL('SC_SERIAL_NO')}"/>
+				<!--변경일-->
+				<s:GridColumn id="regDate"
+							  width="150" minWidth="150"
+							  dataField="regDate" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+							  headerText="{DmosFramework.getInstance().SNL('SC_CHANGE_DATE')}"/>
+				<!--이전상태-->
+				<s:GridColumn id="prevState"
+							  width="100" minWidth="100"
+							  dataField="prevState" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+							  headerText="{DmosFramework.getInstance().SNL('SC_PREV_STATE')}"/>
+				<!--다음상태-->
+				<s:GridColumn id="nextState"
+							  width="100" minWidth="100"
+							  dataField="nextState" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation" showDataTips="false"
+							  headerText="{DmosFramework.getInstance().SNL('SC_NEXT_STATE')}"/>
+				<!--관리번호-->
+				<s:GridColumn id="managementId"
+							  width="200" minWidth="200"
+							  dataField="managementId" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+							  headerText="{DmosFramework.getInstance().SNL('SC_MANAGE_NO')}"/>
+				<!--사용자ID-->
+				<s:GridColumn id="userEmpId"
+							  width="100" minWidth="100"
+							  dataField="userEmpId" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+							  headerText="{DmosFramework.getInstance().SNL('SC_EMP_NO')}"/>
+				<!--사용자명-->
+				<s:GridColumn id="userEmpName"
+							  width="100" minWidth="100"
+							  dataField="userEmpName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+							  headerText="{DmosFramework.getInstance().SNL('SC_EMP_NAME')}"/>
+				<!--부서명-->
+				<s:GridColumn id="userOrgName"
+							  width="100" minWidth="100"
+							  dataField="userOrgName" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+							  headerText="{DmosFramework.getInstance().SNL('SC_DEPT')}"/>
+				<!--이력사유-->
+				<s:GridColumn id="historyReason"
+							  minWidth="100"
+							  dataField="historyReason" itemRenderer="com.saferzone.defcon4.common.components.renderers.GridTruncation"
+							  headerText="{DmosFramework.getInstance().SNL('SC_REASON')}"/>
+			</s:ArrayList>
+		</common:columns>
+	</common:DragGrid>
+	
+</s:VGroup>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+					xmlns:s="library://ns.adobe.com/flex/spark"
+					xmlns:mx="library://ns.adobe.com/flex/mx"
+					clipAndEnableScrolling="true">
+
+	<fx:Script>
+		<![CDATA[
+
+			//------------------------------------------------------------------------------
+			//
+			// Properties #public 
+			//
+			//------------------------------------------------------------------------------
+			
+			override public function set data(value:Object):void
+			{
+				super.data = value;
+				if(!value)
+					return;
+				
+				if(data[column.dataField] == 1)
+					check.selected = true;
+				else
+					check.selected = false;
+			}
+			
+			//------------------------------------------------------------------------------
+			//
+			// Methods 
+			//
+			//------------------------------------------------------------------------------
+			
+			//--------------------------------------
+			// Event Handlers 
+			//--------------------------------------
+			
+			public function changeHandler(event:Event):void
+			{
+				if(check.selected)
+					data[column.dataField] = 1;
+				else
+					data[column.dataField] = 0;
+				
+				parentDocument.parentDocument.dataUpdateFunction(data);
+			
+			}
+
+		]]>
+	</fx:Script>
+
+	<s:CheckBox id="check"
+				horizontalCenter="0"
+				verticalCenter="0"
+				change="changeHandler(event)"/>
+
+</s:GridItemRenderer>

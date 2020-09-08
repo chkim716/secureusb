@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:common="http://defcon4.saferzone.com/common"
+		 xmlns:controls="com.saferzone.defcon4.susbma.policy.controls.*"
+		 currentState="nothing"
+		 creationComplete="bordercontainer1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RadioButtonGroup id="fileSaveGroup" />
+		<s:RadioButtonGroup id="fileReadGroup" />
+		<s:RadioButtonGroup id="fileWriteGroup" />
+		<s:RadioButtonGroup id="takeOutGroup" />
+		<s:RadioButtonGroup id="decodeGroup" />
+		<s:RadioButtonGroup id="exFileRWGroup"/>
+		<s:RadioButtonGroup id="explorerGroup"/>
+		<s:RadioButtonGroup id="fileReadWriteGroup"/>
+		<s:RadioButtonGroup id="fileReadWriteDetailGroup"/>
+		<s:RadioButtonGroup id="outSideGroup"/>
+		<s:RadioButtonGroup id="insideOriginalFileSaveGroup"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.Icons;
+			import com.saferzone.defcon4.common.consts.CustomerId;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			[Bindable]public var ViewOption_CC:Boolean = DmosFramework.getInstance().CUSTOMERID == CustomerId.CC_V5?true:false;
+			[Bindable]public var SaferZoneVersion:int = int(DmosFramework.getInstance().CONFIG("SAFERZONE_VERSION"));
+			[Bindable]public var isAgentlessWebUse:Boolean = DmosFramework.getInstance().CONFIG("AGENTLESS_MNGWEB_USE")=="1"?true:false;
+			/*
+			[Bindable]public var isWindowExplorerUse:Boolean = 
+				(DmosFramework.getInstance().CONFIG("AGENTLESS_MNGWEB_USE")=="1" && (DmosFramework.getInstance().CONFIG("AGENTLESS_WINDOW_EXPLORER")=="0" || DmosFramework.getInstance().CONFIG("AGENTLESS_WINDOW_EXPLORER")=="" || DmosFramework.getInstance().CONFIG("AGENTLESS_WINDOW_EXPLORER")==null))
+				|| DmosFramework.getInstance().CONFIG("SHOW_WINDOW_EXPLORER") == "1"?false:true;
+			*/
+			[Bindable]public var isWindowExplorerUse:Boolean = 
+				DmosFramework.getInstance().CONFIG("SHOW_WINDOW_EXPLORER") == "1"?false:true;
+			
+			[Bindable]public var windowExplorerArr:ArrayCollection = new ArrayCollection([
+				{label:DmosFramework.getInstance().SNL('SC_UNLIMITED'), value:"0"},
+				{label:DmosFramework.getInstance().SNL('SC_NONAUTO_ENCRYPTION'), value:"1"}
+			]);
+			[Bindable]public var decicatedExplorerArr:ArrayCollection = new ArrayCollection([
+				{label:DmosFramework.getInstance().SNL('SC_DEFAULTTEXT'), value:"0"},
+				{label:DmosFramework.getInstance().SNL('SC_NONAUTO_ENCRYPTION'), value:"1"},
+				{label:DmosFramework.getInstance().SNL('SC_AUTO_ENCRYPTION'), value:"2"}
+			]);
+			
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				var configValue:String = DmosFramework.getInstance().CONFIG("USB_POLICY_DECICATED_EXPLORER");
+				
+				if (configValue == "1")
+				{
+					saveTypeFileApp.label = DmosFramework.getInstance().SNL('SC_FILEAPP_USE');
+					exFileType.visible = exFileType.includeInLayout = true;
+					exFileGroup.visible = exFileGroup.includeInLayout = true;
+					takeOutUseNYGroup.visible = takeOutUseNYGroup.includeInLayout = true;
+				}
+				
+				var fileAppConfigValue:String = DmosFramework.getInstance().CONFIG("USB_POLICY_FILE_APPROVAL");
+				
+				if(fileAppConfigValue == "1")
+				{
+					saveTypeFileApp.visible = saveTypeFileApp.includeInLayout = true;
+					fileAppGroup.visible = fileAppGroup.includeInLayout = true;
+				}
+				
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.GS)
+				{
+					susbOutsideUse.visible = susbOutsideUse.includeInLayout = false;
+					susbLoginFail.visible = susbLoginFail.includeInLayout = false;
+					originalFileSave.visible = originalFileSave.includeInLayout = false;
+					explorer.visible = explorer.includeInLayout = false;
+					fileSaveType.visible = fileSaveType.includeInLayout = false;
+					fileSaveOptionDes.visible = fileSaveOptionDes.includeInLayout = false;
+					fileApprovalGrp.visible = fileApprovalGrp.includeInLayout = false;
+					fileApprovalOption01Grp.visible = fileApprovalOption01Grp.includeInLayout = false;
+					separator.visible = separator.includeInLayout = false;
+					usbtitle.visible = usbtitle.includeInLayout = true;
+					susbTtile.visible = susbTtile.includeInLayout = false;
+					panel.width = 400;
+				}
+				
+				if(isAgentlessWebUse)
+				{
+					this.dedicatedExplorer.selected = true;
+				}
+				
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.CC_V5) {
+					originalFileSave.visible = originalFileSave.includeInLayout = false;
+					dedicatedExplorerPolicyOption.visible = dedicatedExplorerPolicyOption.includeInLayout = false;
+					fileApprovalGrp.visible = fileApprovalGrp.includeInLayout = false;
+					fileApprovalOption01Grp.visible = fileApprovalOption01Grp.includeInLayout = false;
+					loginFailCountText.text = "(1~5)";
+				}
+				
+			}
+			
+			protected function scrollerMouseWheelHandler(event:MouseEvent):void
+			{
+				event.preventDefault();
+				//스크롤 이동 범위를 4배 증가
+				optionGroup.verticalScrollPosition -= event.delta * 4;
+			}
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="selection"/>
+		<s:State name="nothing"/>
+	</s:states>
+	
+	
+	<s:layout>
+		<s:VerticalLayout />
+	</s:layout>
+	
+	<common:ToolBar width="100%">
+		<s:Button id="saveBtn"
+				  icon="{Icons.ICON_SAVE_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_SAVE')}"/>
+		<common:ToolBarSeparator/>
+		<s:Button id="addBtn"
+				  icon="{Icons.ICON_ADD_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_ADD')}"/>
+		<s:Button id="delBtn"
+				  icon="{Icons.ICON_REMOVE_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_DELETE')}"/>
+		<common:ToolBarSeparator/>
+		<s:Button id="reloadBtn"
+				  icon="{Icons.ICON_REFRESH_16}"
+				  toolTip="{DmosFramework.getInstance().SNL('SC_REFRESH')}"/>
+	</common:ToolBar>
+	<s:Scroller width="100%" height="100%">
+		<s:Group id="optionGroup" mouseWheel="scrollerMouseWheelHandler(event)" clipAndEnableScrolling="true">
+			<s:HGroup gap="10" visible="{SaferZoneVersion>=2?false:true}" includeInLayout="{SaferZoneVersion>=2?false:true}" >
+				<s:VGroup gap="10" visible.nothing="false">
+					<!--파일저장옵션-->
+					<s:Panel title="{DmosFramework.getInstance().SNL('SC_FILE_SAVE_OPTION')}"
+							 height="300" width="350">
+						<s:layout>
+							<s:VerticalLayout/>
+						</s:layout>
+						<s:VGroup paddingLeft="20" paddingTop="20" width="100%" height="100%" visible="{!ViewOption_CC}" includeInLayout="{!ViewOption_CC}">
+							<!--공인인증서 전용
+							<s:RadioButton id="saveTypeCert" 
+							label="{DmosFramework.getInstance().SNL('SC_SAVE_OPTION_CERTIFICATE')}"
+							groupName="fileSaveGroup"/>
+							-->
+							<!--읽기/쓰기(암호화 파일 전용)-->
+							<s:RadioButton id="saveTypeDec" 
+										   label="{DmosFramework.getInstance().SNL('SC_FILEAPP_ENCRYFILE')}"
+										   groupName="fileSaveGroup"/>
+							
+							<!--읽기/쓰기(모든 파일)-->
+							<s:RadioButton id="saveTypeNor"
+										   label="{DmosFramework.getInstance().SNL('SC_FILEAPP_ALLFILE')}"
+										   groupName="fileSaveGroup"/>
+							
+							<!--읽기전용-->
+							<s:RadioButton id="saveTypeRead"
+										   label="{DmosFramework.getInstance().SNL('D4_READ_ONLY')}"
+										   groupName="fileSaveGroup"/>
+							
+							
+							<!--파일 결재 사용-->
+							<s:RadioButton id="saveTypeFileApp"
+										   label="{DmosFramework.getInstance().SNL('SC_FILEAPP_USE')}"
+										   groupName="fileSaveGroup" 
+										   visible="false" includeInLayout="false"/>
+							
+							<s:VGroup paddingLeft="20" id="fileAppGroup" visible="false" includeInLayout="false">
+								
+								<s:RadioButton id="fileWriteY"
+											   label="{DmosFramework.getInstance().SNL('SC_FILEAPP_POSSIBLE')}"
+											   groupName="fileWriteGroup" 
+											   />
+								
+								<s:RadioButton id="fileWriteN"
+											   label="{DmosFramework.getInstance().SNL('SC_FILEAPP_IMPOSSIBLE')}"
+											   groupName="fileWriteGroup" 
+											   />
+								
+							</s:VGroup>
+							
+							<!--전용탐색기-->
+							<s:RadioButton id="exFileType" 
+										   label="{DmosFramework.getInstance().SNL('D4_DECICATED_EXPLORER')}"
+										   groupName="fileSaveGroup"
+										   visible="false" includeInLayout="false"/>
+							
+							<s:VGroup paddingLeft="20" id="exFileGroup" visible="false" includeInLayout="false"> 
+								
+								<s:HGroup verticalAlign="middle">
+									<!--허용-->
+									<s:RadioButton id="rbExReadOnly"
+												   label="{DmosFramework.getInstance().SNL('D4_READ_ONLY')}"
+												   groupName="exFileRWGroup"
+												   />
+									<!--차단-->
+									<s:RadioButton id="rbExReadWrite"
+												   label="{DmosFramework.getInstance().SNL('D4_READ_WRITE')}"
+												   groupName="exFileRWGroup"
+												   />
+								</s:HGroup>
+							</s:VGroup>
+							
+							
+						</s:VGroup>
+						
+					</s:Panel>
+					
+					<!--패스워드 실패시-->
+					<s:Panel title="{DmosFramework.getInstance().SNL('SC_FAIL_ON_PASSWORD')}" id="panelPasswordFail"
+							 height="200" width="350">
+						<s:layout>
+							<s:VerticalLayout/>
+						</s:layout>
+						<s:VGroup paddingLeft="20" paddingTop="20" paddingBottom="20" width="100%" height="100%">
+							<s:HGroup verticalAlign="middle">
+								<!--실패횟수-->
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_FAILED_COUNT')}"/>
+								<common:SZTextmxInput id="pwFailCount" width="100" textAlign="right" maxChars="1" />
+							</s:HGroup>
+							<s:VGroup paddingLeft="2" paddingTop="20" horizontalAlign="left" id="pwFailInfo" visible="{ViewOption_CC}" includeInLayout="{ViewOption_CC}">
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_INFO_USB_FAILCOUNT')}"/>
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_IINFO_USB_AUTODELETE')}"/>
+							</s:VGroup>
+							<s:VGroup paddingLeft="20" id="pwFailOption" visible="{!ViewOption_CC}" includeInLayout="{!ViewOption_CC}">
+								<s:HGroup verticalAlign="middle" visible="{!ViewOption_CC}" includeInLayout="{!ViewOption_CC}">
+									<!--분실신고-->
+									<s:Label text="{DmosFramework.getInstance().SNL('SC_LOST_REPORT')}"
+											 width="80"/>
+									
+									<s:ToggleButton id="pwFail"/>
+								</s:HGroup>
+								<s:HGroup verticalAlign="middle" visible="{!ViewOption_CC}" includeInLayout="{!ViewOption_CC}">
+									<!--사용여부-->
+									<s:Label text="{DmosFramework.getInstance().SNL('SC_BAN')}" width="80"/>
+									
+									<s:ToggleButton id="pwFailBlock"/>
+								</s:HGroup>
+								<s:HGroup verticalAlign="middle" visible="{!ViewOption_CC}" includeInLayout="{!ViewOption_CC}">
+									<!--데이터삭제-->
+									<s:Label text="{DmosFramework.getInstance().SNL('SC_DELETE_DATA')}" width="80"/>
+									
+									<s:ToggleButton id="pwFailDelete"/>
+								</s:HGroup>
+							</s:VGroup>
+						</s:VGroup>
+					</s:Panel>
+					
+					<!--원본 남김 옵션-->
+					<s:Panel title="{DmosFramework.getInstance().SNL('SC_USBSAVE')}"
+							 height="120" width="350" visible="{!ViewOption_CC}" includeInLayout="{!ViewOption_CC}">
+						<s:layout>
+							<s:VerticalLayout/>
+						</s:layout>
+						<s:VGroup paddingLeft="20" paddingTop="20" paddingBottom="20" width="100%" height="100%">
+							<s:HGroup verticalAlign="middle">
+								<!--저장여부-->
+								<s:Label text="{DmosFramework.getInstance().SNL('SC_USBSAVE_FILE')}" width="80"/>
+								<s:ToggleButton id="sourceFileOpt"/>
+							</s:HGroup>
+						</s:VGroup>
+					</s:Panel>
+				</s:VGroup>
+				
+				<s:VGroup gap="10" visible.nothing="false">
+					<!--반출기능 사용-->
+					<s:Panel title="{DmosFramework.getInstance().SNL('SC_USE_TAKEOUT')}" height="300" width="350">
+						<s:layout>
+							<s:VerticalLayout/>
+						</s:layout>
+						<s:VGroup paddingLeft="20" paddingTop="20" paddingBottom="20" width="100%" height="100%">
+							<!--사용-->
+							<s:RadioButton id="takeOutUseY"
+										   label="{DmosFramework.getInstance().SNL('SC_USE')}"
+										   groupName="takeOutGroup"/>
+							
+							<!--사용안함(사외 사용 불가)-->
+							<s:RadioButton id="takeOutUseNN"
+										   label="{DmosFramework.getInstance().SNL('SC_UNUSE_UNABLE_OUTSIDE')}"
+										   groupName="takeOutGroup"/>
+							
+							<!--사용안함(사외 사용 가능)-->
+							<s:RadioButton id="takeOutUseNY"
+										   label="{DmosFramework.getInstance().SNL('SC_UNUSE_ABLE_OUTSIDE')}"
+										   groupName="takeOutGroup"/>
+							
+							<s:VGroup verticalAlign="middle" id="takeOutUseNYGroup" visible="false" includeInLayout="false">
+								<s:HGroup>
+									<s:Spacer width="10"/>
+									<s:CheckBox id="filePrint" label="{DmosFramework.getInstance().SNL('SC_AVAILABLE_PRINT_OUT_FILE_ON_D4')}"></s:CheckBox>
+								</s:HGroup>
+								<s:HGroup>
+									<s:Spacer width="10"/>
+									<s:CheckBox id="fileCopy" label="{DmosFramework.getInstance().SNL('SC_AVAILABLE_COPY_TO_FILE_ON_D4')}"></s:CheckBox>
+								</s:HGroup>
+								<s:HGroup>
+									<s:Spacer width="10"/>
+									<s:CheckBox id="fileEdit" label="{DmosFramework.getInstance().SNL('SC_AVAILABLE_EDIT_TO_FILE_ON_D4')}"></s:CheckBox>
+								</s:HGroup>
+								<s:HGroup>
+									<s:Spacer width="10"/>
+									<s:CheckBox id="externalCopy" label="{DmosFramework.getInstance().SNL('SC_AVAILABLE_EXTERNFILE_CONY_ON_D4')}"></s:CheckBox>
+								</s:HGroup>
+							</s:VGroup>
+							
+						</s:VGroup>
+					</s:Panel>
+					
+					<!--외부PC에서 파일 복호화-->
+					<s:Panel title="{DmosFramework.getInstance().SNL('SC_DECODE_ON_OUTSIDE_PC')}"
+							 height="200" width="350" 
+							 visible="{!ViewOption_CC}" includeInLayout="{!ViewOption_CC}">
+						<s:layout>
+							<s:VerticalLayout/>
+						</s:layout>
+						<s:VGroup paddingLeft="20" paddingTop="20" paddingBottom="20" width="100%" height="100%">
+							<!--복호화 가능-->
+							<s:RadioButton id="decriptOptY"
+										   label="{DmosFramework.getInstance().SNL('SC_DECODABLE')}"
+										   groupName="decodeGroup"/>
+							<!--복호화 불가-->
+							<s:RadioButton id="decriptOptN"
+										   label="{DmosFramework.getInstance().SNL('SC_NOT_DECODABLE')}"
+										   groupName="decodeGroup"/>
+							<!--반출승인시 복호화 가능(반출기능 사용시)-->
+							<s:RadioButton id="decriptOptYY"
+										   label="{DmosFramework.getInstance().SNL('SC_DECODING_ON_TAKEOUT')}"
+										   groupName="decodeGroup"/>
+							
+						</s:VGroup>
+					</s:Panel>
+				</s:VGroup>
+			</s:HGroup>
+			
+			<!-- ********************************************* SaferZone v5.2 New UI ********************************************* -->
+			
+			<s:HGroup visible="{SaferZoneVersion>=2?true:false}" includeInLayout="{SaferZoneVersion>=2?true:false}" width="100%" height="100%">
+				<s:VGroup visible.nothing="false" height="100%">
+					<s:Panel title="{DmosFramework.getInstance().SNL('SC_DEFAULT_POLICY')}" width="800" id="panel">
+						<s:HGroup width="100%" height="100%">
+							<s:VGroup width="50%" height="100%">
+								<s:VGroup width="100%" height="250" paddingLeft="10">
+									<common:SubTitleLabel color="0xFFFFFF" text="{DmosFramework.getInstance().SNL('SC_SECUREUSB_USETYPE')}" id="susbTtile"/>
+									<common:SubTitleLabel color="0xFFFFFF" text="{DmosFramework.getInstance().SNL('SC_USB_USETYPE')}" id="usbtitle" visible="false" includeInLayout="false"/>
+									
+									<s:HGroup verticalAlign="middle" paddingLeft="20" id="explorer">
+										<!--윈도우 탐색기-->
+										<s:RadioButton id="windowExplorer" visible="{isWindowExplorerUse}" includeInLayout="{isWindowExplorerUse}"
+													   label="{DmosFramework.getInstance().SNL('SC_WINDOW_EXPLORER')}"
+													   groupName="explorerGroup"/>
+										<!--전용 탐색기-->
+										<s:RadioButton id="dedicatedExplorer"
+													   label="{DmosFramework.getInstance().SNL('D4_DECICATED_EXPLORER')}"
+													   groupName="explorerGroup"/>
+									</s:HGroup>
+									
+									<s:VGroup paddingLeft="38">
+										<!--읽기 전용-->
+										<s:RadioButton id="readOnly"
+													   label="{DmosFramework.getInstance().SNL('D4_READ_ONLY')}"
+													   groupName="fileReadWriteGroup"/>
+										<!--읽기 / 쓰기-->
+										<s:RadioButton id="readWrite"
+													   label="{DmosFramework.getInstance().SNL('D4_READ_WRITE')}"
+													   groupName="fileReadWriteGroup"/>
+									</s:VGroup>
+									
+									<s:HGroup  id="fileSaveType" width="100%" verticalAlign="middle" paddingLeft="55">
+										<s:Label text="{DmosFramework.getInstance().SNL('SC_FILE_SAVE_OPTION')}" width="100"/>
+										<s:DropDownList id="fileSavePermission" width="120"/>
+									</s:HGroup>
+									
+									<s:Label text="{'(※ ' + DmosFramework.getInstance().SNL('SC_FILE_SAVE_OPTION_DESCRIPTION') + ')'}" paddingLeft="55" id="fileSaveOptionDes"/>
+									
+									<!--  visible="false" includeInLayout="false" -->
+									<s:HGroup id="fileApprovalGrp"  width="100%" verticalAlign="middle" paddingLeft="55" includeInLayout="{!isAgentlessWebUse}" visible="{!isAgentlessWebUse}">
+										<!--파일결재-->
+										<s:Label text="{DmosFramework.getInstance().SNL('SC_APPROVAL_FILE')}" width="200"/>
+										<s:ToggleButton id="fileApproval"/>
+									</s:HGroup>
+									
+									<s:HGroup id="fileApprovalOption01Grp"  width="100%" verticalAlign="middle" paddingLeft="70" includeInLayout="{!isAgentlessWebUse}" visible="{!isAgentlessWebUse}">
+										<!--승인 파일 이동 시 USB 내 데이터삭제-->
+										<s:Label text="{DmosFramework.getInstance().SNL('SC_APPROVAL_FILE_MOVE_USB_DATE_DELETE')}" width="100%"/>
+										<s:ToggleButton id="approvalFileMoveDataDelete"/>
+									</s:HGroup>
+									
+								</s:VGroup>
+								
+								<s:VGroup width="100%" height="250" paddingLeft="10" paddingTop="3" id="susbOutsideUse">
+									<common:SubTitleLabel color="0xFFFFFF" text="{DmosFramework.getInstance().SNL('SC_SECUREUSB_USETYPE_OUTSIDE')}"/>
+									
+									<s:HGroup verticalAlign="middle" paddingLeft="20">
+										<!--읽기전용-->
+										<s:RadioButton id="outSideReadOnly"
+													   label="{DmosFramework.getInstance().SNL('D4_READ_ONLY')}"
+													   groupName="outSideGroup"/>
+										<!--읽기/쓰기-->
+										<s:RadioButton id="outSideReadWrite"
+													   label="{DmosFramework.getInstance().SNL('D4_READ_WRITE')}"
+													   groupName="outSideGroup"/>
+										<!--사용불가-->
+										<s:RadioButton id="outSideNotUse"
+													   label="{DmosFramework.getInstance().SNL('SC_NOT_USE')}"
+													   groupName="outSideGroup"/>
+									</s:HGroup>
+									
+									<s:HGroup paddingLeft="38"  verticalAlign="middle" id="carryoutApprovalPolicyOption">
+										<s:Label text="{DmosFramework.getInstance().SNL('SC_CARRYOUT_APPROVAL')}" />
+										<s:ToggleButton id="carryoutApproval"/>
+									</s:HGroup>
+									
+									<s:VGroup paddingLeft="40" id="dedicatedExplorerPolicyOption">
+										<s:HGroup verticalAlign="middle">
+											<s:Spacer width="10"/>
+											<s:CheckBox id="dedicatedExplorerFilePrint" label="{DmosFramework.getInstance().SNL('SC_AVAILABLE_PRINT_OUT_FILE_ON_D4')}"></s:CheckBox>
+										</s:HGroup>
+										<s:HGroup verticalAlign="middle">
+											<s:Spacer width="10"/>
+											<s:CheckBox id="dedicatedExplorerFileEdit" label="{DmosFramework.getInstance().SNL('SC_AVAILABLE_EDIT_TO_FILE_ON_D4')}"></s:CheckBox>
+										</s:HGroup>
+										<s:HGroup verticalAlign="middle">
+											<s:Spacer width="10"/>
+											<s:CheckBox id="dedicatedExplorerFileCopy" label="{DmosFramework.getInstance().SNL('SC_AVAILABLE_COPY_TO_FILE_ON_D4')}"></s:CheckBox>
+										</s:HGroup>
+										<s:HGroup verticalAlign="middle">
+											<s:Spacer width="10"/>
+											<s:CheckBox id="dedicatedExplorerExternCopy" label="{DmosFramework.getInstance().SNL('SC_AVAILABLE_EXTERNFILE_CONY_ON_D4')}"></s:CheckBox>
+										</s:HGroup>
+									</s:VGroup>
+									
+								</s:VGroup>
+								
+							</s:VGroup>
+							
+							<controls:ItemSeparator height="100%" id="separator"/>
+							
+							<s:VGroup width="50%" height="100%" paddingLeft="10">
+								
+								<s:VGroup width="100%" height="250" id="susbLoginFail">
+									
+									<common:SubTitleLabel color="0xFFFFFF" text="{DmosFramework.getInstance().SNL('SC_SECUREUSB_LOGINTRY_PROCESS')}"/>
+									
+									<s:HGroup paddingLeft="20" verticalAlign="middle">
+										<s:Label text="{DmosFramework.getInstance().SNL('SC_FAILED_COUNT')}" />
+										<s:TextInput id="loginFailCount" width="50" maxChars="2" visible="true" restrict="0-9" height="18" textAlign="right" paddingBottom="0" paddingLeft="0" paddingRight="3" paddingTop="0"/>
+										<s:Label id="loginFailCountText" text="(0~99)"/>
+									</s:HGroup>
+									
+									<s:VGroup paddingLeft="30">
+										<s:HGroup verticalAlign="middle">
+											<!--사용금지-->
+											<s:Label text="{DmosFramework.getInstance().SNL('SC_BLOCKED_TO_USE')}" width="80"/>
+											<s:ToggleButton id="usbUseDeny"/>
+										</s:HGroup>
+										<s:HGroup verticalAlign="middle">
+											<!--데이터삭제-->
+											<s:Label text="{DmosFramework.getInstance().SNL('SC_DELETE_DATA')}" width="80"/>
+											<s:ToggleButton id="usbDataDelete"/>
+										</s:HGroup>
+										<s:HGroup verticalAlign="middle" visible="{!ViewOption_CC}" includeInLayout="{!ViewOption_CC}">
+											<!--분실신고-->
+											<s:Label text="{DmosFramework.getInstance().SNL('SC_LOST_REPORT')}" width="80"/>
+											<s:ToggleButton id="usbLostReport"/>
+										</s:HGroup>
+									</s:VGroup>
+									
+								</s:VGroup>
+								
+								<s:VGroup width="100%" height="250" includeInLayout="{!isAgentlessWebUse}" visible="{!isAgentlessWebUse}" id="originalFileSave">
+									
+									<common:SubTitleLabel color="0xFFFFFF" text="{DmosFramework.getInstance().SNL('SC_INSIDE_ORIGINAL_FILE_SAVE')}"/>
+									
+									<s:HGroup verticalAlign="middle" paddingLeft="20">
+										<!--원본남김-->
+										<s:Label text="{DmosFramework.getInstance().SNL('SC_SECUREUSB_FILE_SAVE')}" width="200"/>
+										<s:ToggleButton id="secureUsbFileSave"/>
+									</s:HGroup> 
+									
+								</s:VGroup>
+								
+							</s:VGroup>
+						</s:HGroup>
+						
+					</s:Panel>
+				</s:VGroup>
+			</s:HGroup>
+		</s:Group>
+	</s:Scroller>
+</s:Group>

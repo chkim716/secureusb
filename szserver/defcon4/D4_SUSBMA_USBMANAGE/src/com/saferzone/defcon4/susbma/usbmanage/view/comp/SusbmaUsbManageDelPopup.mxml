@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   creationComplete="onCreateCompleteHandler()"
+			   title="{DmosFramework.getInstance().SNL('SC_RETU_D4') + '(' + DmosFramework.getInstance().SNL('SC_REVOKED') +')'}" 
+			   controlBarVisible="true" xmlns:common="http://defcon4.saferzone.com/common">
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.Icons;
+			import com.saferzone.defcon4.common.consts.CustomerId;
+			import com.saferzone.defcon4.services.vo.SearchSusbMasterVO;
+			import com.saferzone.defcon4.common.utils.SZUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.CalendarLayoutChangeEvent;
+			
+			[Bindable]
+			public var usbArr:ArrayCollection = new ArrayCollection();
+			
+			private function onCreateCompleteHandler():void
+			{
+				
+			}
+			
+			
+			protected function messageStr_changeHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+				charCount.text = String(reason.text.length);
+			}
+			
+			protected function isInitPasswod_changeHandler(event:Event):void
+			{
+				if(isInitPasswod.selected)
+				{
+					initPassword.enabled = true;
+					initPassword.setFocus();
+				}
+				else
+				{
+					initPassword.enabled = false;
+					initPassword.text = "";
+				}
+					
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:RadioButtonGroup id="groupType"/>
+		
+		
+		
+	</fx:Declarations>
+	<s:Form width="100%">
+		<!-- 시리얼번호 -->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_SECURE_USB')}">
+			<s:HGroup>
+				<s:DropDownList id="drive" dataProvider="{usbArr}" labelField="drive" width="200" enabled="false"/>
+				<s:Button id="driveSearchBtn" label="{DmosFramework.getInstance().SNL('SC_SEARCH')}"  styleName="s_Button_Search"/>
+			</s:HGroup>
+		</s:FormItem>
+		
+		<!-- Serial No -->
+		<s:FormItem width="100%"
+					id="getSnoForm"
+					label="{DmosFramework.getInstance().SNL('SC_SERIAL_NO_SEARCHED')}"
+					visible="false"
+					includeInLayout="false">
+			<s:Label id="serialNo" text="{drive.selectedItem.serialNo}" />
+			<s:Label id="letter" text="{drive.selectedItem.drive}" visible="false" includeInLayout="false"/>
+			<s:Label id="mediaType" text="{drive.selectedItem.type}" visible="false" includeInLayout="false"/>
+			<s:Label id="instanceId" text="{drive.selectedItem.instanceId}" visible="false" includeInLayout="false"/>
+		</s:FormItem>
+		
+		<!-- 데이터 삭제-->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_DELETE_DATA')}">
+			<s:CheckBox id="dataDelete" label="{DmosFramework.getInstance().SNL('SC_DELETE_DATA')}" enabled="false"/>
+		</s:FormItem>
+		
+		<!-- 데이터 삭제-->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_PASSWORD_INITIALIZE')}">
+			<s:CheckBox id="isInitPasswod" label="{DmosFramework.getInstance().SNL('SC_PASSWORD_INITIALIZE')}" click="isInitPasswod_changeHandler(event)" enabled="false"/>
+			<common:SZTextmxInput id="initPassword" enabled="false"/>
+		</s:FormItem>
+		
+		<!-- 사유-->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_REASON')}">
+			<common:SZTextArea 
+				id="reason" 
+				width="100%" 
+				height="60" 
+				maxChars="100" 
+				change="messageStr_changeHandler(event)"/>
+			
+			<s:HGroup width="100%">
+				<s:Spacer width="100%"/>
+				<s:Label id="charCount" text="0"/>
+				<s:Label id="charCount1" text="/"/>
+				<s:Label id="charCount2" text="100"/>
+			</s:HGroup>
+			
+		</s:FormItem>
+		
+	</s:Form>
+	<s:controlBarLayout>
+		<s:HorizontalLayout horizontalAlign="center"/>
+	</s:controlBarLayout>
+	<s:controlBarContent>
+		<s:VGroup width="100%" horizontalAlign="left">
+			
+			<s:Label id="returnApprovalDesc" text="{DmosFramework.getInstance().SNL('SC_SUSBMA_DEL_DESCRIPTION')}" color="red" width="500"/>
+			
+			<s:HGroup width="100%" horizontalAlign="center">
+				
+				<common:SZButton id="okBtn"
+								 label="{DmosFramework.getInstance().SNL('SC_OK')}"
+								 styleName="popupButtonSkin"/>
+				
+				<common:SZButton id="cancelBtn"
+								 label="{DmosFramework.getInstance().SNL('SC_CANCEL')}"
+								 styleName="popupButtonSkin"/>
+				
+			</s:HGroup>
+			
+		</s:VGroup>
+	</s:controlBarContent>	
+</s:TitleWindow>

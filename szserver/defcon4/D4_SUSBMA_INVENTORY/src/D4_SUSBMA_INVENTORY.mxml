@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:common="http://defcon4.saferzone.com/common"
+			   creationComplete="creationCompleteHandler(event)"
+			   initialize="initializeHandler(event)"
+			   remove="removeHandler(event)" 
+			   xmlns:comp="com.saferzone.defcon4.susbma.inventory.view.comp.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.Icons;
+			import com.saferzone.defcon4.common.consts.CustomerId;
+			import com.saferzone.defcon4.susbma.inventory.ApplicationFacade;
+			
+			import mx.events.FlexEvent;
+			
+			private var facade:ApplicationFacade;
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				var pid:String;
+				var userId:String;
+				var programId:String;
+				var programSeq:String;
+				
+				if(parameters["pid"])
+				{
+					pid = parameters["pid"];
+					var elements:Array = pid.split(":");
+					userId = elements[0];
+					programId = elements[1];
+					programSeq = elements[2];
+				}
+				
+				facade = ApplicationFacade.getInstance(pid?pid:ApplicationFacade.NAME);
+				facade.pid = pid;
+				
+				facade.applicationStartup(this);
+				
+				if(DmosFramework.getInstance().CUSTOMERID == CustomerId.SFA){
+					tabNavi.removeChildAt(1);
+				}
+				
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				//크로스도메인 설정
+				Security.allowDomain("*");
+			}
+			
+			protected function removeHandler(event:FlexEvent):void
+			{
+				facade.removeInstance();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<mx:TabNavigator id="tabNavi" width="100%" height="100%" horizontalGap="3">
+		<!--USB재고현황 탭-->
+		<s:NavigatorContent id="inventoryTab"
+							width="100%" height="100%"
+							label="{DmosFramework.getInstance().SNL('PROGRAMTITLE_D4_SUSBMA_INVENTORY')}">
+			<comp:UsbInventoryStatusView id="statusVW" width="100%" height="100%"/>
+		</s:NavigatorContent>
+		<!--USB재고이력 탭-->
+		<s:NavigatorContent id="historyTab"
+							width="100%" height="100%"
+							label="{DmosFramework.getInstance().SNL('PROGRAMTITLE_D4_SUSBMA_INVENTORY_HISTORY')}">
+			<comp:UsbInventoryHistoryView id="historyVW" width="100%" height="100%"/>
+		</s:NavigatorContent>
+		
+	</mx:TabNavigator>
+	
+</s:Application>

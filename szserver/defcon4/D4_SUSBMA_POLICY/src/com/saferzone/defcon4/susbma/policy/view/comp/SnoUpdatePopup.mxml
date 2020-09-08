@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:validator="com.saferzone.defcon4.agntma.policyobj.validators.*"
+			   title="{DmosFramework.getInstance().SNL('SC_MODIFY')}"
+			   creationComplete="creationCompleteHandler(event)"
+			   controlBarVisible="true" xmlns:common="http://defcon4.saferzone.com/common">
+	<fx:Script>
+		<![CDATA[
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.Icons;
+			
+			import mx.collections.ArrayList;
+			import mx.events.FlexEvent;
+			
+			[Bindable]public var groupList:ArrayList = new ArrayList();
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				chkUnlimitDate.addEventListener(MouseEvent.CLICK, chkBtnClickHandler);
+			}
+			
+			protected function chkBtnClickHandler(event:MouseEvent):void
+			{
+				
+				if(!chkUnlimitDate.selected)
+					startPolicyDate.enabled = startHour.enabled = startMinute.enabled 
+						= endPolicyDate.enabled = endHour.enabled = endMinute.enabled = true;
+				else
+					startPolicyDate.enabled = startHour.enabled = startMinute.enabled 
+						= endPolicyDate.enabled = endHour.enabled = endMinute.enabled = false;
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		
+		
+		
+	</fx:Declarations>
+	
+	<s:Form>
+		<!--부서명-->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_SERIAL_NO')}">
+			<common:SZTextmxInput id="txtSno" enabled="false"/>
+		</s:FormItem>
+		<!--사용자명-->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('D4_DIM_REGEMPNAME')}">
+			<common:SZTextmxInput id="txtEmpName" enabled="false"/>
+		</s:FormItem>
+		<!--서버등록일-->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_DATE_POLICYVALID')}">
+			<s:HGroup verticalAlign="middle">
+				<mx:DateField id="startPolicyDate" formatString="YYYY-MM-DD" yearNavigationEnabled="true"/>
+				<s:NumericStepper id="startHour" minimum="0" maximum="23" width="40" maxChars="2" />
+				<s:NumericStepper id="startMinute" minimum="0" maximum="59" width="40" maxChars="2"/>
+				<s:Label text="~"/>
+				<mx:DateField id="endPolicyDate" formatString="YYYY-MM-DD" yearNavigationEnabled="true"/>
+				<s:NumericStepper id="endHour" minimum="0"  maximum="23" width="40" maxChars="2"/>
+				<s:NumericStepper id="endMinute" minimum="0" maximum="59" width="40" maxChars="2" />
+			</s:HGroup>
+		</s:FormItem>
+		<!--무제한-->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_SAHRE_UNLIMITED')}">
+			<s:CheckBox id="chkUnlimitDate" label="{DmosFramework.getInstance().SNL('SC_SAHRE_UNLIMITED')}"/>
+		</s:FormItem>
+		
+	</s:Form>
+	<s:controlBarLayout>
+		<s:HorizontalLayout horizontalAlign="center"/>
+	</s:controlBarLayout>
+	<s:controlBarContent>
+		<common:SZButton id="okBtn"
+						 label="{DmosFramework.getInstance().SNL('SC_OK')}"
+						 styleName="popupButtonSkin"/>
+		
+		<common:SZButton id="cancelBtn"
+						 label="{DmosFramework.getInstance().SNL('SC_CANCEL')}"
+						 styleName="popupButtonSkin"/>
+	</s:controlBarContent>
+</s:TitleWindow>

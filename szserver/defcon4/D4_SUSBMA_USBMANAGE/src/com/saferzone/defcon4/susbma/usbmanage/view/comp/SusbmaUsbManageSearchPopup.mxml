@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:common="http://defcon4.saferzone.com/common"
+			   controlBarVisible="true"
+			   title="{DmosFramework.getInstance().SNL('SC_SEARCH')}">
+
+	<fx:Declarations>
+
+		<s:RadioButtonGroup id="groupType"/>
+
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+
+			import com.saferzone.defcon4.common.DmosFramework;
+			import com.saferzone.defcon4.common.Icons;
+
+		]]>
+	</fx:Script>
+
+	<s:Form>
+
+		<!-- 서버등록일 -->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_REGDATE_SERVER')}">
+
+			<s:HGroup verticalAlign="middle">
+
+				<mx:DateField id="fromDate"
+							  yearNavigationEnabled="true"
+							  formatString="YYYY-MM-DD"/>
+
+				<s:Label text="~"/>
+
+				<mx:DateField id="toDate"
+							  yearNavigationEnabled="true"
+							  formatString="YYYY-MM-DD"/>
+
+			</s:HGroup>
+
+		</s:FormItem>
+
+		<!-- 시리얼번호 -->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_SERIAL_NO')}">
+
+			<common:SZTextmxInput id="sno" restrict="^'"/>
+
+		</s:FormItem>
+
+		<!-- 관리번호 -->
+		<s:FormItem width="100%"
+					visible="false" includeInLayout="false"
+					label="{DmosFramework.getInstance().SNL('SC_MANAGE_NO')}">
+
+			<common:SZTextmxInput id="manageNo" restrict="^'"/>
+
+		</s:FormItem>
+
+		<!-- 등급 -->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_CLASS')}">
+
+			<s:DropDownList id="classNM" />
+
+		</s:FormItem>
+
+		<!-- 사원명 -->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_EMP_NAME')}">
+
+			<common:SZTextmxInput id="userEmpName" restrict="^'"/>
+
+		</s:FormItem>
+
+		<!-- 관리책임자명 -->
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_MANAGER')}">
+
+			<common:SZTextmxInput id="mngEmpName" restrict="^'"/>
+
+		</s:FormItem>
+
+		<s:FormItem width="100%"
+					label="{DmosFramework.getInstance().SNL('SC_MANAGER')}">
+			
+			<common:SZTextmxInput id="mngEmpName" restrict="^'"/>
+			
+		</s:FormItem>
+		
+	</s:Form>
+
+	<s:controlBarLayout>
+
+		<s:HorizontalLayout horizontalAlign="center"/>
+
+	</s:controlBarLayout>
+
+	<s:controlBarContent>
+
+		<common:SZButton id="okBtn"
+				  label="{DmosFramework.getInstance().SNL('SC_OK')}"
+				  styleName="popupButtonSkin"/>
+
+		<common:SZButton id="cancelBtn"
+				  label="{DmosFramework.getInstance().SNL('SC_CANCEL')}"
+				  styleName="popupButtonSkin"/>
+
+	</s:controlBarContent>
+
+</s:TitleWindow>
